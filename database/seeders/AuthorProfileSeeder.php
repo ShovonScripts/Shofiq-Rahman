@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\AuthorProfile;
 use App\Models\AuthorAchievement;
 use App\Models\AuthorEvent;
+use App\Models\AuthorProfile;
+use Illuminate\Database\Seeder;
 
 class AuthorProfileSeeder extends Seeder
 {
@@ -13,18 +13,18 @@ class AuthorProfileSeeder extends Seeder
     {
         // Create (or get) the single site-wide profile
         $profile = AuthorProfile::firstOrCreate([], [
-            'name'        => 'Rezoan Nasir',
-            'pen_name'    => 'Nas Digital',
-            'location'    => 'London, UK',
-            'email_public'=> null,
-            'website'     => null,
-            'bio_md'      => "I'm a poet and creative technologist blending stories with strategy.\n\nThis is **sample markdown** text for your bio section.",
+            'name' => 'Rezoan Nasir',
+            'pen_name' => 'Nas Digital',
+            'location' => 'London, UK',
+            'email_public' => null,
+            'website' => null,
+            'bio_md' => "I'm a poet and creative technologist blending stories with strategy.\n\nThis is **sample markdown** text for your bio section.",
             'achievements_summary_md' => "## Highlights\n- Published 3 books\n- Featured in major magazines\n- Built digital growth platforms",
             // ✅ use *_path columns (not *_url). Leave null if you don't have defaults yet.
             'avatar_path' => null, // e.g. 'defaults/avatar.jpg' if you add a file
-            'cover_path'  => null, // e.g. 'defaults/cover.jpg'
-            'social_links'=> ['facebook' => '', 'twitter' => '', 'youtube' => '', 'instagram' => ''],
-            'is_active'   => true,
+            'cover_path' => null, // e.g. 'defaults/cover.jpg'
+            'social_links' => ['facebook' => '', 'twitter' => '', 'youtube' => '', 'instagram' => ''],
+            'is_active' => true,
         ]);
 
         // Sample achievements
@@ -32,7 +32,7 @@ class AuthorProfileSeeder extends Seeder
             [
                 'author_profile_id' => $profile->id,
                 'title' => 'Book Launch: Digital Dreams',
-                'year'  => '2021',
+                'year' => '2021',
                 'description_md' => 'Released my first poetry book exploring life and code.',
                 'sort_order' => 10,
                 'created_at' => now(), 'updated_at' => now(),
@@ -40,7 +40,7 @@ class AuthorProfileSeeder extends Seeder
             [
                 'author_profile_id' => $profile->id,
                 'title' => 'Creative Innovator Award',
-                'year'  => '2023',
+                'year' => '2023',
                 'description_md' => 'Recognised for contributions in literature and digital storytelling.',
                 'sort_order' => 20,
                 'created_at' => now(), 'updated_at' => now(),

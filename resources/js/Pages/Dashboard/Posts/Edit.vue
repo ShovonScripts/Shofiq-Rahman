@@ -126,7 +126,7 @@ function getStatusText(status) {
 
     <!-- ✅ Edit Form -->
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div class="p-6">
+      <div class="p-4 sm:p-6">
         <form class="space-y-6" @submit.prevent="submit" novalidate>
           <!-- Title -->
           <div>
@@ -329,7 +329,7 @@ function getStatusText(status) {
           <div class="border-t border-gray-200 pt-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Publishing Settings</h3>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6">
               <!-- Status -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2" for="status">

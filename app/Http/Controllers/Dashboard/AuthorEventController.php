@@ -7,25 +7,31 @@ use App\Http\Requests\Dashboard\StoreAuthorEventRequest;
 use App\Http\Requests\Dashboard\UpdateAuthorEventRequest;
 use App\Models\AuthorEvent;
 use App\Models\AuthorProfile;
+use App\Support\CacheKeys;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class AuthorEventController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         $profile = AuthorProfile::first();
         $items = $profile ? $profile->events()->get() : collect();
+
         return Inertia::render('Dashboard/About/Events/Index', [
             'profile' => $profile,
             'items' => $items,
         ]);
     }
 
-    public function create() {
+    public function create()
+    {
         return Inertia::render('Dashboard/About/Events/Create');
     }
 
-    public function store(StoreAuthorEventRequest $request) {
+    public function store(StoreAuthorEventRequest $request)
+    {
         $profile = AuthorProfile::firstOrCreate([], []);
         $data = $request->validated();
 
@@ -34,30 +40,43 @@ class AuthorEventController extends Controller
         }
 
         $profile->events()->create($data);
-        return redirect()->route('dashboard.about.events.index')->with('success','Event added.');
+        Cache::forget(CacheKeys::aboutProfile());
+
+        return redirect()->route('dashboard.about.events.index')->with('success', 'Event added.');
     }
 
-    public function edit(AuthorEvent $event) {
+    public function edit(AuthorEvent $event)
+    {
         return Inertia::render('Dashboard/About/Events/Edit', [
-            'item' => $event
+            'item' => $event,
         ]);
     }
 
-    public function update(StoreAuthorEventRequest|UpdateAuthorEventRequest $request, AuthorEvent $event) {
+    public function update(StoreAuthorEventRequest|UpdateAuthorEventRequest $request, AuthorEvent $event)
+    {
         $data = $request->validated();
 
         if ($request->hasFile('image')) {
-            if ($event->image_path) Storage::disk('public')->delete($event->image_path);
+            if ($event->image_path) {
+                Storage::disk('public')->delete($event->image_path);
+            }
             $data['image_path'] = $request->file('image')->store('author-events', 'public');
         }
 
         $event->update($data);
-        return redirect()->route('dashboard.about.events.index')->with('success','Event updated.');
+        Cache::forget(CacheKeys::aboutProfile());
+
+        return redirect()->route('dashboard.about.events.index')->with('success', 'Event updated.');
     }
 
-    public function destroy(AuthorEvent $event) {
-        if ($event->image_path) Storage::disk('public')->delete($event->image_path);
+    public function destroy(AuthorEvent $event)
+    {
+        if ($event->image_path) {
+            Storage::disk('public')->delete($event->image_path);
+        }
         $event->delete();
-        return back()->with('success','Event deleted.');
+        Cache::forget(CacheKeys::aboutProfile());
+
+        return back()->with('success', 'Event deleted.');
     }
 }

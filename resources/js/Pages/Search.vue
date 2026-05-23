@@ -13,7 +13,7 @@ export default {
   },
   computed: {
     metaTitle() {
-      return this.q ? `"${this.q}" — সার্চ ফলাফল` : 'সার্চ — কাইজার চৌধুরী সাহিত্য'
+      return this.q ? `"${this.q}" — সার্চ ফলাফল` : 'সার্চ'
     },
     metaDesc() {
       return this.q ? `কীওয়ার্ড "${this.q}" এর সার্চ ফলাফল` : 'লেখা খোঁজার পেজ'

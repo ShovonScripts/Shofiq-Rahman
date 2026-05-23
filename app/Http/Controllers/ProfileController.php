@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
 {
@@ -38,7 +39,7 @@ class ProfileController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'notify_new_comments' => ['nullable', 'boolean'],
         ]);
 
@@ -80,7 +81,7 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        \Auth::logout();
+        Auth::logout();
 
         $user->delete();
 

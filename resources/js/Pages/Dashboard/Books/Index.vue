@@ -1,11 +1,14 @@
-<script setup>
+﻿<script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue'
-import { Link, router } from '@inertiajs/vue3'
+import { ref } from 'vue'
+import { Head, Link, router } from '@inertiajs/vue3'
 
 defineOptions({ layout: AdminLayout })
 
+const deleting = ref(null)
+
 const props = defineProps({
-  books: { type: Object, required: true },
+  books: { type: Object, default: () => ({ data: [], total: 0, from: 0, to: 0, current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null }) },
 })
 
 const destroy = (id) => {
@@ -94,11 +97,11 @@ const getStatusBadgeClass = (status) => {
       <table class="table-bangla">
         <thead>
           <tr>
-            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Book Title</th>
-            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Genre</th>
-            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Published Date</th>
-            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+            <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Book Title</th>
+            <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Genre</th>
+            <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+            <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Published Date</th>
+            <th class="px-3 py-3 sm:px-6 sm:py-4 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -112,31 +115,33 @@ const getStatusBadgeClass = (status) => {
             </td>
           </tr>
           <tr v-for="book in books.data" :key="book.id" class="hover:bg-gray-50 transition-colors duration-150">
-            <td class="px-6 py-4">
+            <td class="px-3 py-3 sm:px-6 sm:py-4">
               <Link :href="`/dashboard/books/${book.id}/edit`" class="text-gray-900 hover:text-blue-600 font-semibold text-lg leading-tight block">
                 {{ book.title }}
               </Link>
               <p v-if="book.subtitle" class="text-sm text-muted mt-1">{{ book.subtitle }}</p>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-3 py-3 sm:px-6 sm:py-4">
               <span v-if="book.genre" class="text-gray-700">{{ book.genre.name }}</span>
               <span v-else class="text-gray-400">—</span>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-3 py-3 sm:px-6 sm:py-4">
               <span :class="getStatusBadgeClass(book.status)">{{ book.status }}</span>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-3 py-3 sm:px-6 sm:py-4">
               <span class="text-gray-700">{{ formatDate(book.published_at) }}</span>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-3 py-3 sm:px-6 sm:py-4">
               <div class="flex justify-end gap-2">
                 <Link :href="`/dashboard/books/${book.id}/edit`" class="btn-bangla btn-bangla-ghost text-sm flex items-center gap-1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                   Edit
                 </Link>
-                <button @click="destroy(book.id)" class="btn-bangla btn-bangla-ghost text-sm text-red-600 flex items-center gap-1">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                  Delete
+                <button @click="destroy(book.id)" class="btn-bangla btn-bangla-ghost text-sm text-red-600 flex items-center gap-1" :disabled="deleting === book.id">
+                  <svg v-if="deleting === book.id" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0a12 12 0 00-8 20.784L6 18.137A7.96 7.96 0 014 12z"/></svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  <span v-if="deleting === book.id">Deleting...</span>
+                  <span v-else>Delete</span>
                 </button>
               </div>
             </td>

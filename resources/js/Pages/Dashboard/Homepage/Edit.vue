@@ -97,7 +97,7 @@ const removeAuthorPhoto = () => {
 
     <!-- ✅ Banners Section -->
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-8">
-      <div class="p-6">
+      <div class="p-4 sm:p-6">
         <div class="flex items-center justify-between mb-6">
           <div>
             <h2 class="text-lg font-semibold text-gray-900">Hero Banners</h2>
@@ -275,11 +275,11 @@ const removeAuthorPhoto = () => {
 
     <!-- ✅ Author Section -->
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div class="p-6">
+      <div class="p-4 sm:p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-6">Author Information</h2>
         
         <form class="space-y-6" @submit.prevent="saveAuthor" enctype="multipart/form-data">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-6">
             <!-- Name -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>

@@ -1,6 +1,7 @@
 <?php
 
 // app/Mail/ContactMessageReceived.php
+
 namespace App\Mail;
 
 use App\Models\ContactMessage;
@@ -16,7 +17,7 @@ class ContactMessageReceived extends Mailable
 
     public function build()
     {
-        return $this->subject('New contact message: '.$this->msg->subject ?: $this->msg->name)
+        return $this->subject('New contact message: '.$this->msg->subject)
             ->view('emails.contact.received');
     }
 }

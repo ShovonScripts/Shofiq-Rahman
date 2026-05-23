@@ -7,42 +7,57 @@ use App\Http\Requests\Dashboard\StoreAuthorAchievementRequest;
 use App\Http\Requests\Dashboard\UpdateAuthorAchievementRequest;
 use App\Models\AuthorAchievement;
 use App\Models\AuthorProfile;
+use App\Support\CacheKeys;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class AuthorAchievementController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         $profile = AuthorProfile::first();
         $items = $profile ? $profile->achievements : [];
+
         return Inertia::render('Dashboard/About/Achievements/Index', [
             'profile' => $profile,
             'items' => $items,
         ]);
     }
 
-    public function create() {
+    public function create()
+    {
         return Inertia::render('Dashboard/About/Achievements/Create');
     }
 
-    public function store(StoreAuthorAchievementRequest $request) {
+    public function store(StoreAuthorAchievementRequest $request)
+    {
         $profile = AuthorProfile::firstOrCreate([], []);
         $profile->achievements()->create($request->validated());
-        return redirect()->route('dashboard.about.achievements.index')->with('success','Achievement added.');
+        Cache::forget(CacheKeys::aboutProfile());
+
+        return redirect()->route('dashboard.about.achievements.index')->with('success', 'Achievement added.');
     }
 
-    public function edit(AuthorAchievement $achievement) {
+    public function edit(AuthorAchievement $achievement)
+    {
         return Inertia::render('Dashboard/About/Achievements/Edit', [
-            'item' => $achievement
+            'item' => $achievement,
         ]);
     }
 
-    public function update(UpdateAuthorAchievementRequest $request, AuthorAchievement $achievement) {
+    public function update(UpdateAuthorAchievementRequest $request, AuthorAchievement $achievement)
+    {
         $achievement->update($request->validated());
-        return redirect()->route('dashboard.about.achievements.index')->with('success','Achievement updated.');
+        Cache::forget(CacheKeys::aboutProfile());
+
+        return redirect()->route('dashboard.about.achievements.index')->with('success', 'Achievement updated.');
     }
 
-    public function destroy(AuthorAchievement $achievement) {
+    public function destroy(AuthorAchievement $achievement)
+    {
         $achievement->delete();
-        return back()->with('success','Achievement deleted.');
+        Cache::forget(CacheKeys::aboutProfile());
+
+        return back()->with('success', 'Achievement deleted.');
     }
 }

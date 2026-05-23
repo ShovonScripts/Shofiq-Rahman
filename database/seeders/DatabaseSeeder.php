@@ -2,57 +2,37 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
-use App\Models\Category;
-use App\Models\Post;
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Seed base content
-        |--------------------------------------------------------------------------
-        */
+        $this->command->info('🌱 Running DatabaseSeeder...');
 
-        // যদি না থাকে, 1টা ডিফল্ট ইউজার
-        $user = User::first() ?? User::factory()->create([
-            'name'     => 'Test User',
-            'email'    => 'jishovon.bn@gmail.com',
-            'password' => bcrypt('password'),
-        ]);
+        // Create default user if none exists
+        $user = User::first();
+        if (! $user) {
+            $user = User::create([
+                'name' => 'Demo User',
+                'email' => 'demo@writer.bd',
+                'password' => bcrypt('demo123'),
+                'role' => 'reader',
+                'is_active' => true,
+            ]);
+        }
 
-        // 5টা ক্যাটেগরি
-        $categories = Category::factory()->count(5)->create();
-
-        // 12টা পোস্ট + র‍্যান্ডম ক্যাটেগরি attach
-        Post::factory()->count(12)->create([
-            'user_id' => $user->id,
-        ])->each(function ($post) use ($categories) {
-            $post->categories()->attach(
-                $categories->random(rand(1, 3))->pluck('id')->toArray()
-            );
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | About system seed (Author profile + sample achievements/events)
-        |--------------------------------------------------------------------------
-        | Make sure you have created: database/seeders/AuthorProfileSeeder.php
-        | Then run: php artisan db:seed --class=AuthorProfileSeeder
-        | or simply: php artisan db:seed
-        */
+        // Seed all datasets in order
         $this->call([
+            CategorySeeder::class,
+            GenreSeeder::class,
+            SettingsSeeder::class,
+            AdminUserSeeder::class,
             AuthorProfileSeeder::class,
+            DemoDataSeeder::class,
         ]);
 
-        // If you also want your existing settings/admin seeds to run automatically,
-        // uncomment lines below (only if these seeders exist in your project):
-        // $this->call([
-        //     SettingsSeeder::class,
-        //     AdminUserSeeder::class,
-        // ]);
+        $this->command->info('✅ All seeders completed!');
     }
 }

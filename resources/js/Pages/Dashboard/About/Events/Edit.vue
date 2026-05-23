@@ -5,7 +5,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue'
 defineOptions({ layout: AdminLayout })
 
 const props = defineProps({
-  event: { type: Object, required: true },
+  event: { type: Object, default: () => ({ happened_at: '', headline: '', description_md: '', location: '', sort_order: 0 }) },
 })
 
 const form = useForm({

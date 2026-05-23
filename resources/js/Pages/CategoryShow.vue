@@ -13,7 +13,7 @@ export default {
   },
   computed: {
     metaTitle() {
-      return `ক্যাটেগরি: ${this.category?.name ?? ''} — কাইজার চৌধুরী সাহিত্য`
+      return `ক্যাটেগরি: ${this.category?.name ?? ''}`
     },
     metaDesc() {
       return `ক্যাটেগরি "${this.category?.name}"-এর প্রকাশিত লেখাগুলোর তালিকা`

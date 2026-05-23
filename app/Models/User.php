@@ -11,11 +11,12 @@ use Illuminate\Notifications\Notifiable;
  *
  * @property string $name
  * @property string $email
- * @property string $role   One of: admin|author|reader
- * @property bool   $is_active
+ * @property string $role One of: admin|author|reader
+ * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  *
  * // Helper methods (for IDEs like Intelephense)
+ *
  * @method bool isAdmin()
  * @method bool isAuthor()
  * @method bool isReader()
@@ -28,8 +29,10 @@ class User extends Authenticatable
     /** ----------------------------------------------------------------
      * Role constants (use these instead of hard-coded strings)
      * --------------------------------------------------------------- */
-    public const ROLE_ADMIN  = 'admin';
+    public const ROLE_ADMIN = 'admin';
+
     public const ROLE_AUTHOR = 'author';
+
     public const ROLE_READER = 'reader';
 
     /**
@@ -39,8 +42,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',       // 'admin' | 'author' | 'reader'
-        'is_active',  // boolean
     ];
 
     /**
@@ -56,8 +57,8 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password'          => 'hashed',
-        'is_active'         => 'boolean',
+        'password' => 'hashed',
+        'is_active' => 'boolean',
     ];
 
     /* -----------------------------------------------------------------

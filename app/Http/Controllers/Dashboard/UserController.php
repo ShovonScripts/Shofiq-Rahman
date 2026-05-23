@@ -1,6 +1,7 @@
 <?php
 
 // app/Http/Controllers/Dashboard/UserController.php
+
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
@@ -18,37 +19,37 @@ class UserController extends Controller
         $users = User::query()
             ->when($q !== '', function ($qr) use ($q) {
                 $qr->where(function ($s) use ($q) {
-                    $s->where('name','like',"%{$q}%")
-                      ->orWhere('email','like',"%{$q}%");
+                    $s->where('name', 'like', "%{$q}%")
+                        ->orWhere('email', 'like', "%{$q}%");
                 });
             })
             ->orderByDesc('created_at')
-            ->select('id','name','email','role','is_active','email_verified_at','created_at')
+            ->select('id', 'name', 'email', 'role', 'is_active', 'email_verified_at', 'created_at')
             ->paginate(15)
-            ->appends(['q'=>$q]);
+            ->appends(['q' => $q]);
 
         return Inertia::render('Dashboard/Users/Index', [
             'filters' => ['q' => $q],
-            'users'   => $users,
+            'users' => $users,
         ]);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'     => ['required','string','max:120'],
-            'email'    => ['required','email','max:190','unique:users,email'],
-            'password' => ['required','string','min:8'],
-            'role'     => ['required','in:admin,author,reader'],
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email', 'max:190', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+            'role' => ['required', 'in:admin,author,reader'],
         ]);
 
-        User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role'     => $data['role'],
-            'is_active'=> true,
-        ]);
+        $user = new User();
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $user->password = Hash::make($data['password']);
+        $user->role = $data['role'];
+        $user->is_active = true;
+        $user->save();
 
         return back()->with('success', 'User created.');
     }
@@ -61,10 +62,11 @@ class UserController extends Controller
         }
 
         $data = $request->validate([
-            'role' => ['required','in:admin,author,reader'],
+            'role' => ['required', 'in:admin,author,reader'],
         ]);
 
-        $user->update(['role' => $data['role']]);
+        $user->role = $data['role'];
+        $user->save();
 
         return back()->with('success', 'Role updated.');
     }
@@ -75,7 +77,8 @@ class UserController extends Controller
             return back()->with('error', "You can't deactivate yourself.");
         }
 
-        $user->update(['is_active' => !$user->is_active]);
+        $user->is_active = ! $user->is_active;
+        $user->save();
 
         return back()->with('success', $user->is_active ? 'User activated.' : 'User deactivated.');
     }
@@ -83,10 +86,11 @@ class UserController extends Controller
     public function resetPassword(Request $request, User $user)
     {
         $data = $request->validate([
-            'password' => ['required','string','min:8','confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $user->update(['password' => Hash::make($data['password'])]);
+        $user->password = Hash::make($data['password']);
+        $user->save();
 
         return back()->with('success', 'Password reset.');
     }

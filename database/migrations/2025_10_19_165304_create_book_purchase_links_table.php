@@ -11,17 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('book_purchase_links', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('book_id')->constrained()->cascadeOnDelete();
-        $table->string('label');               // যেমন: রকমারি, অ্যামাজন
-        $table->string('url');                 // বাইরের লিংক
-        $table->boolean('is_primary')->default(false);
-        $table->unsignedInteger('sort_order')->default(0);
-        $table->timestamps();
-    });
+        Schema::create('book_purchase_links', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('book_id')->constrained()->cascadeOnDelete();
+            $table->string('label');               // যেমন: রকমারি, অ্যামাজন
+            $table->string('url');                 // বাইরের লিংক
+            $table->boolean('is_primary')->default(false);
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->timestamps();
+        });
     }
-
 
     /**
      * Reverse the migrations.

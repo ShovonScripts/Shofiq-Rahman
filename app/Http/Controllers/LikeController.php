@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
 use App\Models\Book;
-use App\Models\Like;
+use App\Models\Post;
 use Illuminate\Http\Request;
 
 class LikeController extends Controller
@@ -13,10 +12,8 @@ class LikeController extends Controller
     {
         $data = $request->validate([
             'type' => 'required|in:post,book',
-            'id'   => 'required|integer',
+            'id' => 'required|integer',
         ]);
-
-        $this->middleware('auth');
 
         $userId = $request->user()->id;
         $model = $data['type'] === 'post'

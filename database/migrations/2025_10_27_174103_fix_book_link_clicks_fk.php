@@ -5,28 +5,33 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        // 1) নতুন কলাম যোগ (nullable) যাতে ব্যাকফিল করা যায়
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
+        // 1) নতুন কলাম যোগ (nullable) যাতে ব্যাকফিল করা যায়
         Schema::table('book_link_clicks', function (Blueprint $table) {
-            if (!Schema::hasColumn('book_link_clicks', 'book_purchase_link_id')) {
+            if (! Schema::hasColumn('book_link_clicks', 'book_purchase_link_id')) {
                 $table->unsignedBigInteger('book_purchase_link_id')
-                      ->nullable()
-                      ->after('book_id');
+                    ->nullable()
+                    ->after('book_id');
             }
         });
 
         // 2) পুরনো কলাম থাকলে সেখান থেকে ভ্যালু কপি (ব্যাকফিল)
         if (Schema::hasColumn('book_link_clicks', 'book_link_id')) {
-            DB::statement("
+            DB::statement('
                 UPDATE `book_link_clicks`
                 SET `book_purchase_link_id` = `book_link_id`
                 WHERE `book_purchase_link_id` IS NULL
-            ");
+            ');
         }
 
-        // 3) পুরনো FK/ইনডেক্স থাকলে ডায়নামিকভাবে ড্রপ (Schema::table এর বাইরে, যাতে ইমিডিয়েট try/catch কাজ করে)
+        // 3) পুরনো FK/ইনডেক্স থাকলে ডায়নামিকভাবে ড্রপ (Schema::table এর বাইরে, যাতে ইমিডিয়েট try/catch কাজ করে)
         if (Schema::hasColumn('book_link_clicks', 'book_link_id')) {
             try {
                 // পুরনো FK নাম বের করা
@@ -39,7 +44,7 @@ return new class extends Migration {
                       AND REFERENCED_TABLE_NAME IS NOT NULL
                     LIMIT 1
                 ");
-                if ($fk && !empty($fk->CONSTRAINT_NAME)) {
+                if ($fk && ! empty($fk->CONSTRAINT_NAME)) {
                     DB::statement('ALTER TABLE `book_link_clicks` DROP FOREIGN KEY `'.$fk->CONSTRAINT_NAME.'`');
                 }
 
@@ -53,7 +58,7 @@ return new class extends Migration {
                       AND INDEX_NAME <> 'PRIMARY'
                     LIMIT 1
                 ");
-                if ($idx && !empty($idx->INDEX_NAME)) {
+                if ($idx && ! empty($idx->INDEX_NAME)) {
                     DB::statement('ALTER TABLE `book_link_clicks` DROP INDEX `'.$idx->INDEX_NAME.'`');
                 }
             } catch (\Throwable $e) {
@@ -73,8 +78,11 @@ return new class extends Migration {
               AND INDEX_NAME <> 'PRIMARY'
             LIMIT 1
         ");
-        if (!$hasIndex) {
-            try { DB::statement('ALTER TABLE `book_link_clicks` ADD INDEX (`book_purchase_link_id`)'); } catch (\Throwable $e) {}
+        if (! $hasIndex) {
+            try {
+                DB::statement('ALTER TABLE `book_link_clicks` ADD INDEX (`book_purchase_link_id`)');
+            } catch (\Throwable $e) {
+            }
         }
 
         // 4.b) FK চেক
@@ -87,12 +95,12 @@ return new class extends Migration {
               AND REFERENCED_TABLE_NAME = 'book_purchase_links'
             LIMIT 1
         ");
-        if (!$hasNewFk) {
+        if (! $hasNewFk) {
             try {
                 Schema::table('book_link_clicks', function (Blueprint $table) {
                     $table->foreign('book_purchase_link_id')
-                          ->references('id')->on('book_purchase_links')
-                          ->onDelete('cascade');
+                        ->references('id')->on('book_purchase_links')
+                        ->onDelete('cascade');
                 });
             } catch (\Throwable $e) {
                 // যদি এখানে নাম-ডুপ্লিকেট ইত্যাদি লাগে, উপরের চেক সাধারণত রক্ষা করবে
@@ -118,20 +126,24 @@ return new class extends Migration {
 
     public function down(): void
     {
-        // 1) পুরনো কলাম ফিরিয়ে আনা (nullable)
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
+        // 1) পুরনো কলাম ফিরিয়ে আনা (nullable)
         Schema::table('book_link_clicks', function (Blueprint $table) {
-            if (!Schema::hasColumn('book_link_clicks', 'book_link_id')) {
+            if (! Schema::hasColumn('book_link_clicks', 'book_link_id')) {
                 $table->unsignedBigInteger('book_link_id')->nullable()->after('book_id');
             }
         });
 
         // 2) ব্যাকফিল: নতুন কলাম থেকে পুরনোতে কপি
         if (Schema::hasColumn('book_link_clicks', 'book_purchase_link_id')) {
-            DB::statement("
+            DB::statement('
                 UPDATE `book_link_clicks`
                 SET `book_link_id` = `book_purchase_link_id`
                 WHERE `book_link_id` IS NULL
-            ");
+            ');
         }
 
         // 3) নতুন FK/ইনডেক্স ড্রপ (থাকলে)
@@ -146,7 +158,7 @@ return new class extends Migration {
                   AND REFERENCED_TABLE_NAME = 'book_purchase_links'
                 LIMIT 1
             ");
-            if ($fk && !empty($fk->CONSTRAINT_NAME)) {
+            if ($fk && ! empty($fk->CONSTRAINT_NAME)) {
                 DB::statement('ALTER TABLE `book_link_clicks` DROP FOREIGN KEY `'.$fk->CONSTRAINT_NAME.'`');
             }
 
@@ -160,7 +172,7 @@ return new class extends Migration {
                   AND INDEX_NAME <> 'PRIMARY'
                 LIMIT 1
             ");
-            if ($idx && !empty($idx->INDEX_NAME)) {
+            if ($idx && ! empty($idx->INDEX_NAME)) {
                 DB::statement('ALTER TABLE `book_link_clicks` DROP INDEX `'.$idx->INDEX_NAME.'`');
             }
         } catch (\Throwable $e) {
@@ -174,12 +186,12 @@ return new class extends Migration {
             }
         });
 
-        // 5) পুরনো FK ফিরিয়ে আনা
+        // 5) পুরনো FK ফিরিয়ে আনা
         try {
             Schema::table('book_link_clicks', function (Blueprint $table) {
                 $table->foreign('book_link_id')
-                      ->references('id')->on('book_links')
-                      ->onDelete('cascade');
+                    ->references('id')->on('book_links')
+                    ->onDelete('cascade');
             });
         } catch (\Throwable $e) {
             // স্কিপ

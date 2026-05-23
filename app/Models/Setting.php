@@ -17,7 +17,8 @@ class Setting extends Model
     {
         return Cache::rememberForever("settings.{$key}", function () use ($key, $default) {
             $row = static::query()->where('key', $key)->first();
-            return $row?->value ?? $default;
+
+            return $row->value ?? $default;
         });
     }
 
@@ -29,6 +30,7 @@ class Setting extends Model
     {
         static::updateOrCreate(['key' => $key], ['value' => $value]);
         Cache::forget("settings.{$key}");
+        Cache::forget('settings.all');
     }
 
     /**
@@ -37,9 +39,12 @@ class Setting extends Model
     public static function getJson(string $key, $default = [])
     {
         $raw = static::get($key);
-        if (!$raw) return $default;
+        if (! $raw) {
+            return $default;
+        }
 
         $decoded = json_decode($raw, true);
+
         return is_array($decoded) ? $decoded : $default;
     }
 
@@ -52,6 +57,17 @@ class Setting extends Model
     }
 
     /**
+     * Get all settings as a single cached array.
+     * Reduces 7+ cache reads to 1 per request.
+     */
+    public static function allCached(): array
+    {
+        return Cache::rememberForever('settings.all', function () {
+            return static::query()->pluck('value', 'key')->toArray();
+        });
+    }
+
+    /**
      * Forget a cached key or all settings cache.
      */
     public static function forget(?string $key = null): void
@@ -59,7 +75,11 @@ class Setting extends Model
         if ($key) {
             Cache::forget("settings.{$key}");
         } else {
-            Cache::flush();
+            Cache::forget('settings.all');
+            $keys = static::query()->pluck('key');
+            foreach ($keys as $k) {
+                Cache::forget("settings.{$k}");
+            }
         }
     }
 }

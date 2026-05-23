@@ -6,13 +6,9 @@ use App\Models\Book;
 use App\Models\Comment;
 use App\Models\Post;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class CommentController extends Controller
 {
-    use AuthorizesRequests;
-
     public function __construct()
     {
         // Middleware শুধুমাত্র Controller routes এর জন্য
@@ -29,9 +25,9 @@ class CommentController extends Controller
         $this->authorize('create', Comment::class);
 
         $data = $request->validate([
-            'type'    => 'required|in:post,book',
-            'id'      => 'required|integer',
-            'body'    => 'required|string|min:2|max:3000',
+            'type' => 'required|in:post,book',
+            'id' => 'required|integer',
+            'body' => 'required|string|min:2|max:3000',
             'website' => 'nullable|size:0', // honeypot
         ]);
 
@@ -44,8 +40,8 @@ class CommentController extends Controller
             : Book::published()->findOrFail($data['id']);
 
         $comment = $model->comments()->create([
-            'user_id'     => $request->user()->id,
-            'body'        => trim($data['body']),
+            'user_id' => $request->user()->id,
+            'body' => trim($data['body']),
             'is_approved' => false, // moderation-ready
         ]);
 
@@ -53,11 +49,11 @@ class CommentController extends Controller
             return response()->json([
                 'success' => true,
                 'comment' => [
-                    'id'      => $comment->id,
-                    'body'    => $comment->body,
-                    'author'  => $request->user()->name,
+                    'id' => $comment->id,
+                    'body' => $comment->body,
+                    'author' => $request->user()->name,
                     'user_id' => $request->user()->id,
-                    'time'    => $comment->created_at->diffForHumans(),
+                    'time' => $comment->created_at->diffForHumans(),
                 ],
             ]);
         }

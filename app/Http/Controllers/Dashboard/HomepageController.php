@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\HomeBanner;
 use App\Models\Setting;
+use App\Support\CacheKeys;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -19,18 +21,18 @@ class HomepageController extends Controller
         return Inertia::render('Dashboard/Homepage/Edit', [
             'banners' => HomeBanner::orderBy('sort_order')->get()
                 ->map(fn (HomeBanner $b) => [
-                    'id'         => $b->id,
-                    'title'      => $b->title,
-                    'link'       => $b->link,
-                    'is_active'  => (bool) $b->is_active,
+                    'id' => $b->id,
+                    'title' => $b->title,
+                    'link' => $b->link,
+                    'is_active' => (bool) $b->is_active,
                     'sort_order' => (int) $b->sort_order,
-                    'image_url'  => $b->image_url, // accessor on model
+                    'image_url' => $b->image_url, // accessor on model
                 ]),
             'author' => [
-                'name'      => Setting::get('home_author_name', ''),
-                'bio'       => Setting::get('home_author_bio_md', ''),
+                'name' => Setting::get('home_author_name', ''),
+                'bio' => Setting::get('home_author_bio_md', ''),
                 'photo_url' => ($p = Setting::get('home_author_photo'))
-                    ? asset('storage/' . ltrim($p, '/'))
+                    ? storage_url($p)
                     : null,
             ],
         ]);
@@ -44,12 +46,12 @@ class HomepageController extends Controller
         // Trim common text fields up front
         $request->merge([
             'title' => trim((string) $request->input('title')),
-            'link'  => trim((string) $request->input('link')),
+            'link' => trim((string) $request->input('link')),
         ]);
 
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:160'],
-            'link'  => ['nullable', 'url', 'max:255'],
+            'link' => ['nullable', 'url', 'max:255'],
             'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:3072'], // ~3MB
         ]);
 
@@ -58,12 +60,14 @@ class HomepageController extends Controller
         $maxSort = (int) HomeBanner::max('sort_order');
 
         HomeBanner::create([
-            'title'      => $data['title'] ?: null,
-            'link'       => $data['link'] ?: null,
-            'image'      => $path,
+            'title' => $data['title'] ?: null,
+            'link' => $data['link'] ?: null,
+            'image' => $path,
             'sort_order' => $maxSort + 1,
-            'is_active'  => true,
+            'is_active' => true,
         ]);
+
+        Cache::forget(CacheKeys::homeBanners());
 
         return redirect()->back()->with('success', 'Banner added successfully.');
     }
@@ -74,16 +78,16 @@ class HomepageController extends Controller
     public function updateBanner(Request $request, HomeBanner $banner)
     {
         $request->merge([
-            'title'     => trim((string) $request->input('title')),
-            'link'      => trim((string) $request->input('link')),
+            'title' => trim((string) $request->input('title')),
+            'link' => trim((string) $request->input('link')),
             'is_active' => $request->boolean('is_active'),
         ]);
 
         $data = $request->validate([
-            'title'     => ['nullable', 'string', 'max:160'],
-            'link'      => ['nullable', 'url', 'max:255'],
+            'title' => ['nullable', 'string', 'max:160'],
+            'link' => ['nullable', 'url', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
-            'image'     => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:3072'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:3072'],
         ]);
 
         // Handle new image
@@ -100,6 +104,8 @@ class HomepageController extends Controller
 
         $banner->update($data);
 
+        Cache::forget(CacheKeys::homeBanners());
+
         return redirect()->back()->with('success', 'Banner updated successfully.');
     }
 
@@ -112,8 +118,10 @@ class HomepageController extends Controller
         if ($banner->image && Storage::disk('public')->exists($banner->image)) {
             Storage::disk('public')->delete($banner->image);
         }
-        
+
         $banner->delete();
+
+        Cache::forget(CacheKeys::homeBanners());
 
         return redirect()->back()->with('success', 'Banner deleted successfully.');
     }
@@ -127,9 +135,9 @@ class HomepageController extends Controller
     public function sortBanners(Request $request)
     {
         $validated = $request->validate([
-            'items'                 => ['required', 'array'],
-            'items.*.id'            => ['required', 'integer', 'exists:home_banners,id'],
-            'items.*.sort_order'    => ['required', 'integer'],
+            'items' => ['required', 'array'],
+            'items.*.id' => ['required', 'integer', 'exists:home_banners,id'],
+            'items.*.sort_order' => ['required', 'integer'],
         ]);
 
         foreach ($validated['items'] as $item) {
@@ -137,6 +145,8 @@ class HomepageController extends Controller
                 'sort_order' => (int) $item['sort_order'],
             ]);
         }
+
+        Cache::forget(CacheKeys::homeBanners());
 
         return response()->json(['success' => true, 'message' => 'Banner order updated successfully.']);
     }
@@ -148,24 +158,24 @@ class HomepageController extends Controller
     {
         $request->merge([
             'name' => trim((string) $request->input('name')),
-            'bio'  => (string) $request->input('bio', ''),
+            'bio' => (string) $request->input('bio', ''),
         ]);
 
         $data = $request->validate([
-            'name'  => ['required', 'string', 'max:120'],
-            'bio'   => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:120'],
+            'bio' => ['nullable', 'string'],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:3072'],
         ]);
 
         // Handle photo upload
         if ($request->hasFile('photo')) {
             $oldPhoto = Setting::get('home_author_photo');
-            
+
             // Delete old photo if exists
             if ($oldPhoto && Storage::disk('public')->exists($oldPhoto)) {
                 Storage::disk('public')->delete($oldPhoto);
             }
-            
+
             $path = $request->file('photo')->store('home/author', 'public');
             Setting::set('home_author_photo', $path);
         }
@@ -183,8 +193,10 @@ class HomepageController extends Controller
     public function toggleBanner(HomeBanner $banner)
     {
         $banner->update([
-            'is_active' => !$banner->is_active
+            'is_active' => ! $banner->is_active,
         ]);
+
+        Cache::forget(CacheKeys::homeBanners());
 
         return redirect()->back()->with('success', 'Banner status updated successfully.');
     }
@@ -195,11 +207,11 @@ class HomepageController extends Controller
     public function deleteAuthorPhoto()
     {
         $oldPhoto = Setting::get('home_author_photo');
-        
+
         if ($oldPhoto && Storage::disk('public')->exists($oldPhoto)) {
             Storage::disk('public')->delete($oldPhoto);
         }
-        
+
         Setting::set('home_author_photo', null);
 
         return redirect()->back()->with('success', 'Author photo removed successfully.');

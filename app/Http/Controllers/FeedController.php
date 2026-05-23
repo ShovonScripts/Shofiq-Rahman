@@ -25,7 +25,7 @@ class FeedController extends Controller
         return response()
             ->view('rss', [
                 'siteUrl' => $siteUrl,
-                'items'   => $items,
+                'items' => $items,
             ])
             ->header('Content-Type', 'application/rss+xml; charset=UTF-8')
             ->header('Cache-Control', 'public, max-age=3600');

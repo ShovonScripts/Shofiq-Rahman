@@ -7,26 +7,28 @@ defineOptions({ layout: AdminLayout })
 const props = defineProps({
   profile: {
     type: Object,
-    default: () => ({
-      name: '', pen_name: '', date_of_birth: '', location: '', email_public: '',
-      website: '', bio_md: '', achievements_summary_md: '',
-      social_links: { facebook: '', twitter: '', youtube: '', instagram: '' },
-      is_active: true, avatar_url: null, cover_url: null,
-    }),
+    default: null,
   },
 })
 
+const profileData = props.profile ?? {
+  name: '', pen_name: '', date_of_birth: '', location: '', email_public: '',
+  website: '', bio_md: '', achievements_summary_md: '',
+  social_links: { facebook: '', twitter: '', youtube: '', instagram: '' },
+  is_active: true, avatar_url: null, cover_url: null,
+}
+
 const form = useForm({
-  name: props.profile.name ?? '',
-  pen_name: props.profile.pen_name ?? '',
-  date_of_birth: props.profile.date_of_birth ?? '',
-  location: props.profile.location ?? '',
-  email_public: props.profile.email_public ?? '',
-  website: props.profile.website ?? '',
-  bio_md: props.profile.bio_md ?? '',
-  achievements_summary_md: props.profile.achievements_summary_md ?? '',
-  social_links: props.profile.social_links ?? { facebook:'', twitter:'', youtube:'', instagram:'' },
-  is_active: props.profile.is_active ?? true,
+  name: profileData.name ?? '',
+  pen_name: profileData.pen_name ?? '',
+  date_of_birth: profileData.date_of_birth ?? '',
+  location: profileData.location ?? '',
+  email_public: profileData.email_public ?? '',
+  website: profileData.website ?? '',
+  bio_md: profileData.bio_md ?? '',
+  achievements_summary_md: profileData.achievements_summary_md ?? '',
+  social_links: profileData.social_links ?? { facebook:'', twitter:'', youtube:'', instagram:'' },
+  is_active: profileData.is_active ?? true,
   avatar: null, cover: null,
 })
 

@@ -376,6 +376,15 @@
   }
   
   .btn-bangla { @apply w-full justify-center; }
+
+  .card-bangla { padding: 1rem !important; }
+
+  .table-bangla th,
+  .table-bangla td { padding: 0.75rem 0.75rem !important; }
+
+  .stats-card { padding: 1rem !important; }
+
+  .btn-bangla-sm { padding: 0.375rem 0.625rem !important; font-size: 0.75rem !important; }
 }
 
 /* ─────────────────────────────────────────

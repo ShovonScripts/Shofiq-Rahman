@@ -1,15 +1,18 @@
-<script setup>
+﻿<script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { ref } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 
 // ✅ Attach Admin Layout
 defineOptions({ layout: AdminLayout })
 
+const busyId = ref(null)
+
 const { props: pageProps } = usePage()
 const flash = pageProps.flash || {}
 
 const props = defineProps({
-  comments: Object,
+  comments: { type: Object, default: () => ({ data: [], total: 0, from: 0, to: 0, current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null }) },
 })
 
 // ✅ Get status counts
@@ -152,22 +155,22 @@ function truncateText(text, length = 100) {
         <table class="w-full">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Author
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Comment
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Content
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -193,7 +196,7 @@ function truncateText(text, length = 100) {
               :key="comment.id" 
               class="hover:bg-gray-50 transition-colors duration-150"
             >
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="flex items-center">
                   <div class="bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center mr-3">
                     <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +210,7 @@ function truncateText(text, length = 100) {
                 </div>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="max-w-xs">
                   <p class="text-gray-900 leading-relaxed">
                     {{ truncateText(comment.body, 120) }}
@@ -215,7 +218,7 @@ function truncateText(text, length = 100) {
                 </div>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="max-w-xs">
                   <p class="font-medium text-gray-900">
                     {{ comment.commentable?.title || '—' }}
@@ -226,13 +229,13 @@ function truncateText(text, length = 100) {
                 </div>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span class="text-gray-700 text-sm">
                   {{ formatDate(comment.created_at) }}
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span
                   class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize"
                   :class="comment.is_approved
@@ -247,11 +250,11 @@ function truncateText(text, length = 100) {
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="flex justify-end gap-2">
                   <button
                     v-if="!comment.is_approved"
-                    @click="approve(comment.id)"
+                    @click="approve(comment.id)" :disabled="busyId === comment.id"
                     class="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200"
                   >
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,7 +265,7 @@ function truncateText(text, length = 100) {
                   
                   <button
                     v-if="comment.is_approved"
-                    @click="unapprove(comment.id)"
+                    @click="unapprove(comment.id)" :disabled="busyId === comment.id"
                     class="inline-flex items-center px-3 py-2 text-sm font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-colors duration-200"
                   >
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,7 +275,7 @@ function truncateText(text, length = 100) {
                   </button>
                   
                   <button
-                    @click="destroy(comment.id)"
+                    @click="destroy(comment.id)" :disabled="busyId === comment.id"
                     class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
                   >
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,7 +293,7 @@ function truncateText(text, length = 100) {
       <!-- ✅ Pagination -->
       <div
         v-if="comments.prev_page_url || comments.next_page_url"
-        class="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        class="px-3 py-3 sm:px-6 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div class="text-sm text-gray-700">
           Showing {{ comments.from }} to {{ comments.to }} of {{ comments.total }} results

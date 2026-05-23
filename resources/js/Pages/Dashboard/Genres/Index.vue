@@ -1,10 +1,13 @@
-<script setup>
+﻿<script setup>
+import { ref } from 'vue'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 
 defineOptions({ layout: AdminLayout })
 
-const props = defineProps({ genres: Object })
+const deleting = ref(null)
+
+const props = defineProps({ genres: { type: Object, default: () => ({ data: [], total: 0, from: 0, to: 0, current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null }) } })
 
 const destroyGenre = (id) => {
   if (confirm('Are you sure you want to delete this genre?')) {
@@ -116,9 +119,11 @@ const destroyGenre = (id) => {
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                   Edit
                 </Link>
-                <button @click="destroyGenre(genre.id)" class="btn-bangla btn-bangla-ghost text-sm text-red-600 flex items-center gap-1">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                  Delete
+                <button @click="destroyGenre(genre.id)" class="btn-bangla btn-bangla-ghost text-sm text-red-600 flex items-center gap-1" :disabled="deleting === genre.id">
+                  <svg v-if="deleting === genre.id" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0a12 12 0 00-8 20.784L6 18.137A7.96 7.96 0 014 12z"/></svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  <span v-if="deleting === genre.id">Deleting...</span>
+                  <span v-else>Delete</span>
                 </button>
               </div>
             </td>
@@ -129,7 +134,7 @@ const destroyGenre = (id) => {
   </div>
 
   <!-- Pagination -->
-  <div v-if="props.genres.prev_page_url || props.genres.next_page_url" class="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div v-if="props.genres.prev_page_url || props.genres.next_page_url" class="mt-6 px-3 sm:px-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div class="text-sm text-muted">Showing {{ props.genres.from }} to {{ props.genres.to }} of {{ props.genres.total }} results</div>
     <div class="flex gap-2">
       <Link v-if="props.genres.prev_page_url" :href="props.genres.prev_page_url" class="btn-bangla btn-bangla-ghost text-sm flex items-center gap-1" preserve-scroll>

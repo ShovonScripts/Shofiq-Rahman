@@ -65,7 +65,7 @@ export default {
   <div>
     <Head>
       <title>বই</title>
-      <meta name="description" content="কাইজার চৌধুরীর প্রকাশিত বইগুলোর তালিকা" />
+      <meta name="description" content="প্রকাশিত বইগুলোর তালিকা" />
     </Head>
 
     <!-- Header (edge-to-edge on mobile) -->
@@ -73,7 +73,7 @@ export default {
       <div class="px-3 sm:px-0 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
         <div>
           <h1 class="heading-bangla text-2xl sm:text-3xl md:text-4xl mb-1.5 sm:mb-2">বইয়ের তালিকা</h1>
-          <p class="text-base sm:text-lg text-muted font-sans">কাইজার চৌধুরীর প্রকাশিত বই</p>
+          <p class="text-base sm:text-lg text-muted font-sans">প্রকাশিত বই</p>
         </div>
 
         <!-- Search -->
@@ -293,9 +293,8 @@ export default {
             ]"
             :disabled="!link.url || link.active || submitting"
             :aria-current="link.active ? 'page' : undefined"
-            v-html="link.label"
             @click.prevent="go(link)"
-          />
+          >{{ link.label }}</button>
         </div>
       </div>
     </nav>
@@ -305,7 +304,7 @@ export default {
       <div class="px-3 sm:px-0 card-bangla bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
         <div class="p-6 text-center">
           <h3 class="heading-bangla heading-bangla-2 mb-2">আরও বই এক্সপ্লোর করুন</h3>
-          <p class="text-muted mb-6 font-sans">কাইজার চৌধুরীর সাহিত্যকর্ম সম্পর্কে আরও জানুন</p>
+          <p class="text-muted mb-6 font-sans">সাহিত্যকর্ম সম্পর্কে আরও জানুন</p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/about" class="btn-bangla btn-bangla-primary">লেখক সম্পর্কে</Link>
             <Link href="/blog"  class="btn-bangla btn-bangla-secondary">ব্লগ পড়ুন</Link>

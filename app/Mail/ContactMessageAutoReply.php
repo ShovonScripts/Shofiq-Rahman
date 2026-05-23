@@ -1,6 +1,7 @@
 <?php
 
 // app/Mail/ContactMessageAutoReply.php
+
 namespace App\Mail;
 
 use App\Models\ContactMessage;

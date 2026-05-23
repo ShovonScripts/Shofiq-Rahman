@@ -9,7 +9,7 @@ defineOptions({ layout: AdminLayout })
 // ✅ Props
 const props = defineProps({
   filters: Object,
-  users: Object,
+  users: { type: Object, default: () => ({ data: [], total: 0, from: 0, to: 0, current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null }) },
 })
 
 // ✅ Refs
@@ -332,22 +332,22 @@ const formatDate = (date) => {
         <table class="w-full">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 User
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Verified
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Joined Date
               </th>
-              <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -373,14 +373,14 @@ const formatDate = (date) => {
               :key="user.id" 
               class="hover:bg-gray-50 transition-colors duration-150"
             >
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div>
                   <div class="text-gray-900 font-semibold">{{ user.name }}</div>
                   <div class="text-sm text-gray-600">{{ user.email }}</div>
                 </div>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <select 
                   :value="user.role" 
                   @change="e => changeRole(user.id, e.target.value)"
@@ -392,7 +392,7 @@ const formatDate = (date) => {
                 </select>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span
                   class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize"
                   :class="{
@@ -411,7 +411,7 @@ const formatDate = (date) => {
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span
                   class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize"
                   :class="{
@@ -430,13 +430,13 @@ const formatDate = (date) => {
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span class="text-gray-700">
                   {{ formatDate(user.created_at) }}
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="flex justify-end gap-2">
                   <button
                     @click="toggleActive(user.id)"
@@ -486,7 +486,7 @@ const formatDate = (date) => {
       <!-- ✅ Pagination -->
       <div
         v-if="users.prev_page_url || users.next_page_url"
-        class="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        class="px-3 py-3 sm:px-6 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div class="text-sm text-gray-700">
           Showing {{ users.from }} to {{ users.to }} of {{ users.total }} users

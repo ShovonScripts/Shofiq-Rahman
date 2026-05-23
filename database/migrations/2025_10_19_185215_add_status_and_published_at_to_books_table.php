@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::table('books', function (Blueprint $table) {
             // enum ব্যবহার করি (তোমার Model/Scope অনুযায়ী)
-            if (!Schema::hasColumn('books', 'status')) {
+            if (! Schema::hasColumn('books', 'status')) {
                 $table->enum('status', ['draft', 'published'])
-                      ->default('draft')
-                      ->after('cover'); // cover-এর পর রাখলে UI/DDL সুন্দর থাকে
+                    ->default('draft')
+                    ->after('cover'); // cover-এর পর রাখলে UI/DDL সুন্দর থাকে
             }
 
-            if (!Schema::hasColumn('books', 'published_at')) {
+            if (! Schema::hasColumn('books', 'published_at')) {
                 $table->timestamp('published_at')->nullable()->after('status');
             }
 

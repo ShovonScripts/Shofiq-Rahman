@@ -1,4 +1,4 @@
-<!-- resources/js/Pages/Books/Show.vue -->
+﻿<!-- resources/js/Pages/Books/Show.vue -->
 <script>
 import AppLayout from '../../Layouts/AppLayout.vue'
 import { Head, Link } from '@inertiajs/vue3'
@@ -20,15 +20,19 @@ export default {
       default: () => ({}),
     },
   },
+  data() {
+      return { localComments: this.book?.comments || [] }
+    },
+
   computed: {
     htmlBody() {
       return DOMPurify.sanitize(md.render(this.book?.description || ''))
     },
     metaTitle() {
-      return this.book?.title || 'বই'
+      return this.book?.meta_json?.title || this.book?.title || 'বই'
     },
     metaDesc() {
-      return this.book?.subtitle || 'বইয়ের বিবরণ'
+      return this.book?.meta_json?.description || this.book?.subtitle || 'বইয়ের বিবরণ'
     },
     canonical() {
       const base = this.$page?.props?.app?.url || window.location.origin
@@ -86,6 +90,7 @@ export default {
                 class="w-full h-full object-cover"
                 :alt="book.title"
                 loading="eager"
+                fetchpriority="high"
                 decoding="async"
               />
               <div v-else class="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 grid place-items-center">
@@ -192,7 +197,7 @@ export default {
                 </p>
                 <div class="flex items-center gap-4 p-3 sm:p-4 bg-blue-50 rounded-xl">
                   <div>
-                    <p class="font-semibold text-ink font-sans">কাইজার চৌধুরী</p>
+                    <p class="font-semibold text-ink font-sans">{{ $page.props.settings?.site_name || 'Writer' }}</p>
                   </div>
                 </div>
               </header>
@@ -222,8 +227,10 @@ export default {
             <Comments
               :type="'book'"
               :parentId="book.id"
-              :items="book.comments || []"
+              :items="localComments"
               :canPost="$page.props.auth?.user"
+              @added="localComments.unshift($event)"
+              @deleted="localComments = localComments.filter(c => c.id !== $event)"
             />
           </section>
         </main>
@@ -234,7 +241,7 @@ export default {
         <div class="rounded-md sm:rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 shadow-sm">
           <div class="px-4 sm:px-8 py-6 sm:py-8 text-center">
             <h3 class="heading-bangla text-xl sm:text-2xl mb-3 sm:mb-4">আরও বই পড়ুন</h3>
-            <p class="text-muted mb-5 sm:mb-6 font-sans text-base sm:text-lg">কাইজার চৌধুরীর অন্যান্য বইগুলোও দেখুন</p>
+            <p class="text-muted mb-5 sm:mb-6 font-sans text-base sm:text-lg">অন্যান্য বইগুলোও দেখুন</p>
             <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Link href="/books" class="btn-bangla btn-bangla-primary">সব বই দেখুন</Link>
               <Link href="/about" class="btn-bangla btn-bangla-secondary">লেখক সম্পর্কে</Link>

@@ -2,15 +2,16 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('book_links', function (Blueprint $table) {
             // ✅ যদি sort_order কলাম না থাকে তাহলে তৈরি করো
-            if (!Schema::hasColumn('book_links', 'sort_order')) {
+            if (! Schema::hasColumn('book_links', 'sort_order')) {
                 $table->integer('sort_order')->default(0)->after('is_primary');
             }
         });

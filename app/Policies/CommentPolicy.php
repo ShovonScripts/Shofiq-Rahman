@@ -9,17 +9,27 @@ use App\Models\User;
 
 class CommentPolicy
 {
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
     public function create(User $user): bool
     {
-        return true; // লগইন হলেই
+        return true;
+    }
+
+    public function update(User $user, Comment $comment): bool
+    {
+        return $comment->user_id === $user->id;
     }
 
     public function delete(User $user, Comment $comment): bool
     {
-        // ১) নিজের কমেন্ট সে ডিলিট করতে পারবে
-        if ($comment->user_id === $user->id) return true;
+        if ($comment->user_id === $user->id) {
+            return true;
+        }
 
-        // ২) পোস্ট/বইয়ের মালিকও ডিলিট করতে পারবে
         $ownerId = null;
         $parent = $comment->commentable;
 

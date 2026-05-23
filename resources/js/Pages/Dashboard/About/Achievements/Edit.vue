@@ -5,7 +5,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue'
 defineOptions({ layout: AdminLayout })
 
 const props = defineProps({
-  achievement: { type: Object, required: true },
+  achievement: { type: Object, default: () => ({ title: '', year: '', description_md: '', icon: '', sort_order: 0 }) },
 })
 
 const form = useForm({

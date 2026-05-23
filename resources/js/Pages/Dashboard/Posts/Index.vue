@@ -8,7 +8,7 @@ defineOptions({ layout: AdminLayout })
 
 // ✅ Props
 defineProps({
-  posts: Object,
+  posts: { type: Object, default: () => ({ data: [], total: 0, from: 0, to: 0, current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null }) },
 })
 
 // ✅ Reactive state
@@ -118,16 +118,16 @@ function getStatusText(status) {
         <table class="w-full">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th class="px-6 py-4 text-left text-xs font-sans font-medium text-muted uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-sans font-medium text-muted uppercase tracking-wider">
                 Title
               </th>
-              <th class="px-6 py-4 text-left text-xs font-sans font-medium text-muted uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-sans font-medium text-muted uppercase tracking-wider">
                 Status
               </th>
-              <th class="px-6 py-4 text-left text-xs font-sans font-medium text-muted uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-sans font-medium text-muted uppercase tracking-wider">
                 Published Date
               </th>
-              <th class="px-6 py-4 text-right text-xs font-sans font-medium text-muted uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-right text-xs font-sans font-medium text-muted uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -138,7 +138,7 @@ function getStatusText(status) {
               :key="p.id" 
               class="hover:bg-gray-50 transition-colors duration-150"
             >
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="flex items-start space-x-3">
                   <div class="bg-blue-50 rounded-lg p-2 flex-shrink-0">
                     <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +158,7 @@ function getStatusText(status) {
                 </div>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span
                   class="inline-flex items-center px-3 py-1 rounded-full text-sm font-sans font-medium capitalize"
                   :class="{
@@ -179,13 +179,13 @@ function getStatusText(status) {
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span class="text-ink font-sans">
                   {{ formatDate(p.published_at) }}
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="flex justify-end gap-2">
                   <Link
                     :href="`/dashboard/posts/${p.id}/edit`"
@@ -241,7 +241,7 @@ function getStatusText(status) {
       <!-- Pagination -->
       <div
         v-if="posts.prev_page_url || posts.next_page_url"
-        class="px-6 py-4 border-t border-gray-200"
+        class="px-3 py-3 sm:px-6 sm:py-4 border-t border-gray-200"
       >
         <div class="flex items-center justify-between">
           <div class="text-sm text-muted font-sans">

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Comment extends Model
@@ -15,8 +17,6 @@ class Comment extends Model
      */
     protected $fillable = [
         'user_id',
-        'commentable_type',
-        'commentable_id',
         'body',
         'is_approved',
     ];
@@ -28,9 +28,9 @@ class Comment extends Model
     {
         return [
             'is_approved' => 'boolean',
-            'created_at'  => 'datetime',
-            'updated_at'  => 'datetime',
-            'deleted_at'  => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -41,7 +41,7 @@ class Comment extends Model
     /**
      * Polymorphic relation to Post or Book (or any other model).
      */
-    public function commentable()
+    public function commentable(): MorphTo
     {
         return $this->morphTo();
     }
@@ -50,7 +50,7 @@ class Comment extends Model
      * The user who wrote the comment.
      * Kept as `user()` because many controllers/eager-loads use this name.
      */
-    public function user()
+    public function user(): BelongsTo
     {
         // comments.user_id → users.id
         return $this->belongsTo(User::class, 'user_id');
@@ -59,7 +59,7 @@ class Comment extends Model
     /**
      * Alias of user() for readability in some views/controllers.
      */
-    public function author()
+    public function author(): BelongsTo
     {
         return $this->user();
     }

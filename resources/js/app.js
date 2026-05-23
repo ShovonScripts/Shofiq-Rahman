@@ -1,8 +1,5 @@
 // resources/js/app.js
 import './bootstrap'
-import 'bootstrap/dist/css/bootstrap.min.css'
-import * as bootstrap from 'bootstrap'
-window.bootstrap = bootstrap
 
 import '../css/app.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
@@ -16,21 +13,24 @@ import AppLayout from './Layouts/AppLayout.vue'
 import { ZiggyVue } from 'ziggy-js'
 
 createInertiaApp({
-  title: (title) => (title ? `${title} - App` : 'App'),
+  title: (title) => title || '',
 
   resolve: (name) => {
-    const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
+    // ✅ Lazy-load pages — only downloads the component when its route is visited
+    const pages = import.meta.glob('./Pages/**/*.vue')
     const key = `./Pages/${name}.vue`
-    const page = pages[key]
+    const loadPage = pages[key]
 
-    if (!page) {
+    if (!loadPage) {
       console.error(`[Inertia] Page not found: ${key}`)
       throw new Error(`Page not found: ${key}`)
     }
 
-    // Default layout for every page, unless the page already sets one
-    page.default.layout ??= AppLayout
-    return page
+    return loadPage().then((module) => {
+      // Default layout for every page, unless the page already sets one
+      module.default.layout ??= AppLayout
+      return module
+    })
   },
 
   setup({ el, App, props, plugin }) {

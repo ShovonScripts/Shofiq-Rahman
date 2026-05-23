@@ -1,0 +1,29 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    phpVersion: 80200
+
+    paths:
+        - app
+        - database
+        - tests
+        - routes
+
+    excludePaths:
+        - database/migrations/*
+        - database/factories/*
+        - database/seeders/*
+
+    level: 4
+
+    inferPrivatePropertyTypeFromConstructor: true
+
+    ignoreErrors:
+        - '#Access to an undefined property#'
+        -
+            message: '#Anonymous function should return array#'
+            path: app/Http/Controllers/BookController.php
+        -
+            message: '#Anonymous function should return array#'
+            path: app/Http/Controllers/PostController.php

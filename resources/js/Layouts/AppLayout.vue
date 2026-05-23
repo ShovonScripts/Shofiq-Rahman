@@ -1,9 +1,10 @@
 <script>
-import { Link, router } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
+import ToastContainer from '@/Components/ToastContainer.vue'
 
 export default {
   name: 'AppLayout',
-  components: { Link },
+  components: { Head, Link, ToastContainer },
 
   data() {
     return {
@@ -18,7 +19,7 @@ export default {
       return this.$page?.props?.auth?.user || null
     },
     siteName() {
-      return this.$page?.props?.settings?.site_name || 'কাইজার চৌধুরী সাহিত্য'
+      return this.$page?.props?.settings?.site_name || 'Writer'
     },
     brandLogo() {
       return this.$page?.props?.brand?.logo || null
@@ -34,6 +35,9 @@ export default {
         youtube: s.youtube || '',
         instagram: s.instagram || '',
       }
+    },
+    seo() {
+      return this.$page?.props?.seo || {}
     },
     currentYear() {
       return new Date().getFullYear()
@@ -107,12 +111,59 @@ export default {
         router.get('/search', { q: this.searchQuery.trim() })
       }
     },
+
+    injectAnalytics() {
+      const s = this.seo
+
+      if (s.google_analytics_id) {
+        const el = document.createElement('script')
+        el.async = true
+        el.src = `https://www.googletagmanager.com/gtag/js?id=${s.google_analytics_id}`
+        document.head.appendChild(el)
+
+        const el2 = document.createElement('script')
+        el2.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${s.google_analytics_id}');`
+        document.head.appendChild(el2)
+      }
+
+      if (s.google_tag_manager_id) {
+        const el = document.createElement('script')
+        el.textContent = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${s.google_tag_manager_id}');`
+        document.head.appendChild(el)
+
+        const noscript = document.createElement('noscript')
+        const iframe = document.createElement('iframe')
+        iframe.src = `https://www.googletagmanager.com/ns.html?id=${s.google_tag_manager_id}`
+        iframe.height = '0'
+        iframe.width = '0'
+        iframe.style.display = 'none'
+        iframe.style.visibility = 'hidden'
+        noscript.appendChild(iframe)
+        document.body.insertBefore(noscript, document.body.firstChild)
+      }
+
+      if (s.facebook_pixel_id) {
+        const el = document.createElement('script')
+        el.textContent = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${s.facebook_pixel_id}');fbq('track','PageView');`
+        document.head.appendChild(el)
+
+        const noscript = document.createElement('noscript')
+        const img = document.createElement('img')
+        img.height = '1'
+        img.width = '1'
+        img.style.display = 'none'
+        img.src = `https://www.facebook.com/tr?id=${s.facebook_pixel_id}&ev=PageView&noscript=1`
+        noscript.appendChild(img)
+        document.body.insertBefore(noscript, document.body.firstChild)
+      }
+    },
   },
 
   mounted() {
     document.addEventListener('click', this.handleClickOutside)
     window.addEventListener('keydown', this.handleKeydown)
     window.addEventListener('resize', this.handleResize)
+    this.injectAnalytics()
   },
 
   beforeUnmount() {
@@ -125,6 +176,17 @@ export default {
 
 <template>
   <div class="min-h-screen flex flex-col bg-bg text-ink transition-colors duration-200">
+    <!-- Global Meta Tags -->
+    <Head>
+      <meta name="keywords" :content="seo.meta_keywords" />
+      <meta name="google-site-verification" :content="seo.google_site_verification" />
+      <meta name="msvalidate.01" :content="seo.bing_site_verification" />
+      <meta name="yandex-verification" :content="seo.yandex_site_verification" />
+      <meta property="fb:app_id" :content="seo.facebook_app_id" />
+      <meta name="twitter:site" :content="seo.twitter_handle" />
+      <meta name="twitter:card" content="summary_large_image" />
+    </Head>
+
     <!-- Skip to content -->
     <a href="#main-content"
        class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-blue-600 text-white px-3 py-2 rounded-lg font-sans">
@@ -355,7 +417,7 @@ export default {
 
     <!-- Footer -->
     <footer class="bg-white border-t border-gray-200 mt-auto">
-      <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col items-center gap-8">
           <Link :href="route('home')" class="flex flex-col items-center gap-2 text-ink hover:opacity-90 focus-bangla rounded">
             <img v-if="brandLogo" :src="brandLogo" :alt="brandName" class="h-12 w-auto object-contain" loading="lazy" />
@@ -388,13 +450,13 @@ export default {
   © {{ currentYear }} {{ brandName }}. সর্বস্বত্ব সংরক্ষিত।
   <div class="mt-2">
     <a 
-      href="https://jis.digital" 
+      href="https://prodo.top" 
       target="_blank" 
       rel="noopener noreferrer"
       class="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors duration-200"
     >
-      Developed by 
-      <span class="font-medium text-gray-600">Shovon</span>
+      Crafted by 
+      <span class="font-medium text-gray-600">ProDo</span>
       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
       </svg>
@@ -405,6 +467,7 @@ export default {
       </div>
     </footer>
   </div>
+  <ToastContainer />
 </template>
 
 <style scoped>

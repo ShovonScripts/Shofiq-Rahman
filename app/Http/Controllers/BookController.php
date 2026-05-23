@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
-use App\Models\Genre;
 use App\Models\Category;
+use App\Models\Genre;
+use App\Support\CacheKeys;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class BookController extends Controller
@@ -16,16 +19,16 @@ class BookController extends Controller
      */
     public function index()
     {
-        $q      = trim((string) request('q', ''));
-        $year   = trim((string) request('year', ''));
-        $lang   = trim((string) request('lang', ''));
+        $q = trim((string) request('q', ''));
+        $year = trim((string) request('year', ''));
+        $lang = trim((string) request('lang', ''));
         $genres = request()->input('genre', []);
-        $cats   = request()->input('category', []);
+        $cats = request()->input('category', []);
 
         // Normalize genres to array of slugs
         if (is_string($genres) && $genres !== '') {
             $genres = [$genres];
-        } elseif (!is_array($genres)) {
+        } elseif (! is_array($genres)) {
             $genres = [];
         }
         $genres = array_filter(array_map('trim', $genres));
@@ -33,7 +36,7 @@ class BookController extends Controller
         // Normalize categories to array of slugs
         if (is_string($cats) && $cats !== '') {
             $cats = [$cats];
-        } elseif (!is_array($cats)) {
+        } elseif (! is_array($cats)) {
             $cats = [];
         }
         $cats = array_filter(array_map('trim', $cats));
@@ -55,10 +58,10 @@ class BookController extends Controller
                 });
             })
             ->when($lang !== '', fn ($query) => $query->where('language', $lang))
-            ->when(!empty($genres), function ($query) use ($genres) {
+            ->when(! empty($genres), function ($query) use ($genres) {
                 $query->whereHas('genres', fn ($g) => $g->whereIn('slug', $genres));
             })
-            ->when(!empty($cats), function ($query) use ($cats) {
+            ->when(! empty($cats), function ($query) use ($cats) {
                 $query->whereHas('categories', fn ($c) => $c->whereIn('slug', $cats));
             })
             ->with([
@@ -68,61 +71,85 @@ class BookController extends Controller
             ->select('id', 'user_id', 'title', 'slug', 'subtitle', 'cover', 'published_at', 'release_date', 'language')
             ->paginate(12)
             ->appends([
-                'q'        => $q,
-                'year'     => $year,
-                'lang'     => $lang,
-                'genre'    => $genres,
+                'q' => $q,
+                'year' => $year,
+                'lang' => $lang,
+                'genre' => $genres,
                 'category' => $cats,
             ])
             ->through(function ($b) {
                 return [
-                    'id'           => $b->id,
-                    'title'        => $b->title,
-                    'slug'         => $b->slug,
-                    'subtitle'     => $b->subtitle,
-                    'cover_url'    => $b->cover_url,
-                    'language'     => $b->language,
+                    'id' => $b->id,
+                    'title' => $b->title,
+                    'slug' => $b->slug,
+                    'subtitle' => $b->subtitle,
+                    'cover_url' => $b->cover_url,
+                    'language' => $b->language,
                     'published_at' => optional($b->published_at)->toDateString(),
                     'release_year' => optional($b->release_date)->format('Y') ?? optional($b->published_at)->format('Y'),
-                    'genres'       => $b->genres->map(fn ($g) => ['name' => $g->name, 'slug' => $g->slug]),
-                    'categories'   => $b->categories->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug]),
+                    'genres' => $b->genres->map(fn ($g) => ['name' => $g->name, 'slug' => $g->slug]),
+                    'categories' => $b->categories->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug]),
                 ];
             });
 
-        // Distinct languages for filter
-        $langs = Book::published()
-            ->whereNotNull('language')
-            ->select('language')
-            ->distinct()
-            ->orderBy('language')
-            ->pluck('language');
+        // Distinct languages for filter (cached 5 min — changes rarely)
+        $langs = Cache::remember('books.filter.langs', now()->addMinutes(5), function () {
+            return Book::published()
+                ->whereNotNull('language')
+                ->select('language')
+                ->distinct()
+                ->orderBy('language')
+                ->pluck('language');
+        });
 
-        // Distinct years (release_date or published_at)
-        $years = Book::published()
-            ->selectRaw('COALESCE(YEAR(release_date), YEAR(published_at)) as y')
-            ->where(function ($q) {
-                $q->whereNotNull('release_date')
-                  ->orWhereNotNull('published_at');
-            })
-            ->orderByDesc('y')
-            ->distinct()
-            ->pluck('y');
+        // Distinct years (cached 5 min — changes rarely)
+        $years = Cache::remember('books.filter.years', now()->addMinutes(5), function () {
+            $driver = DB::getDriverName();
 
-        $allGenres     = Genre::orderBy('name')->get(['id', 'name', 'slug']);
-        $allCategories = Category::orderBy('name')->get(['id', 'name', 'slug']);
+            if ($driver === 'sqlite') {
+                return Book::published()
+                    ->whereNotNull('release_date')
+                    ->orWhereNotNull('published_at')
+                    ->get()
+                    ->map(function ($book) {
+                        return $book->release_date
+                            ? $book->release_date->format('Y')
+                            : $book->published_at?->format('Y');
+                    })
+                    ->filter()
+                    ->unique()
+                    ->sortDesc()
+                    ->values();
+            }
+
+            return Book::published()
+                ->selectRaw('COALESCE(YEAR(release_date), YEAR(published_at)) as y')
+                ->where(function ($q) {
+                    $q->whereNotNull('release_date')
+                        ->orWhereNotNull('published_at');
+                })
+                ->orderByDesc('y')
+                ->distinct()
+                ->pluck('y');
+        });
+
+        $allGenres = Cache::remember(CacheKeys::allGenres(), now()->addMinutes(30), fn () => Genre::orderBy('name')->get(['id', 'name', 'slug'])
+        );
+        $allCategories = Cache::remember(CacheKeys::allCategories(), now()->addMinutes(30), fn () => Category::orderBy('name')->get(['id', 'name', 'slug'])
+        );
 
         return Inertia::render('Books/Index', [
-            'filters'       => [
-                'q'        => $q,
-                'year'     => $year,
-                'lang'     => $lang,
-                'genre'    => $genres,
+            'filters' => [
+                'q' => $q,
+                'year' => $year,
+                'lang' => $lang,
+                'genre' => $genres,
                 'category' => $cats,
             ],
-            'books'         => $books,
-            'langs'         => $langs,
-            'years'         => $years,
-            'allGenres'     => $allGenres,
+            'books' => $books,
+            'langs' => $langs,
+            'years' => $years,
+            'allGenres' => $allGenres,
             'allCategories' => $allCategories,
         ]);
     }
@@ -134,13 +161,14 @@ class BookController extends Controller
     public function show(string $slug)
     {
         $book = Book::with([
-                'author:id,name',
-                // ✅ Ordered links via the scope so they show up consistently
-                'links' => fn ($q) => $q->ordered(),
-                'genres:id,name,slug',
-                'categories:id,name,slug',
-                'comments' => fn ($q) => $q->with('author:id,name')->latest()->limit(50),
-            ])
+            'author:id,name',
+            // ✅ Ordered links via the scope so they show up consistently
+            'links' => fn ($q) => $q->ordered(),
+            'genres:id,name,slug',
+            'categories:id,name,slug',
+            'comments' => fn ($q) => $q->with('author:id,name')->latest()->limit(50),
+        ])
+            ->withCount('likes')
             ->published()
             ->where('slug', $slug)
             ->firstOrFail();
@@ -154,39 +182,39 @@ class BookController extends Controller
 
         return Inertia::render('Books/Show', [
             'book' => [
-                'id'           => $book->id,
-                'title'        => $book->title,
-                'slug'         => $book->slug,
-                'subtitle'     => $book->subtitle,
-                'description'  => $book->description,
-                'cover_url'    => $book->cover_url,
-                'author'       => $book->author?->name,
-                'language'     => $book->language,
+                'id' => $book->id,
+                'title' => $book->title,
+                'slug' => $book->slug,
+                'subtitle' => $book->subtitle,
+                'description' => $book->description,
+                'cover_url' => $book->cover_url,
+                'author' => $book->author?->name,
+                'language' => $book->language,
                 'published_at' => optional($book->published_at)->toDateString(),
                 'release_date' => optional($book->release_date)->toDateString(),
-                'genres'       => $book->genres->map(fn ($g) => ['name' => $g->name, 'slug' => $g->slug]),
-                'categories'   => $book->categories->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug]),
-                'links'        => $book->links->map(function ($link) {
+                'genres' => $book->genres->map(fn ($g) => ['name' => $g->name, 'slug' => $g->slug]),
+                'categories' => $book->categories->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug]),
+                'links' => $book->links->map(function ($link) {
                     return [
-                        'id'         => $link->id,
-                        'label'      => $link->label,
+                        'id' => $link->id,
+                        'label' => $link->label,
                         // Public redirect route (model binding by ID)
-                        'url'        => route('books.link.go', ['link' => $link->id]),
+                        'url' => route('books.link.go', ['link' => $link->id]),
                         'is_primary' => (bool) $link->is_primary,
                     ];
                 }),
-                'meta'         => [
-                    'title'       => $meta['title'] ?? null,
+                'meta' => [
+                    'title' => $meta['title'] ?? null,
                     'description' => $meta['description'] ?? null,
                 ],
-                'likes_count'  => $book->likes()->count(),
-                'liked_by_me'  => $likedByMe,
-                'comments'     => $book->comments->map(fn ($c) => [
-                    'id'       => $c->id,
-                    'body'     => $c->body,
-                    'author'   => $c->author?->name,
-                    'user_id'  => $c->user_id,
-                    'time'     => $c->created_at->diffForHumans(),
+                'likes_count' => (int) $book->likes_count,
+                'liked_by_me' => $likedByMe,
+                'comments' => $book->comments->map(fn ($c) => [
+                    'id' => $c->id,
+                    'body' => $c->body,
+                    'author' => $c->author?->name,
+                    'user_id' => $c->user_id,
+                    'time' => $c->created_at->diffForHumans(),
                 ]),
             ],
         ]);

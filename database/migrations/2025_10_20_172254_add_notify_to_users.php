@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // যদি কলাম না থাকে, তাহলে যোগ করো
-            if (!Schema::hasColumn('users', 'notify_new_comments')) {
+            if (! Schema::hasColumn('users', 'notify_new_comments')) {
                 $table->boolean('notify_new_comments')->default(true)->after('email');
             }
         });

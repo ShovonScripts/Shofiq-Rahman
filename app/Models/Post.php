@@ -27,7 +27,7 @@ class Post extends Model
 
     protected $casts = [
         'published_at' => 'datetime',
-        'meta_json'    => 'array',
+        'meta_json' => 'array',
     ];
 
     protected $appends = ['cover_url'];
@@ -59,7 +59,7 @@ class Post extends Model
      */
     public function genres(): BelongsToMany
     {
-        return $this->belongsToMany(\App\Models\Genre::class, 'post_genre');
+        return $this->belongsToMany(Genre::class, 'post_genre');
     }
 
     /**
@@ -67,7 +67,7 @@ class Post extends Model
      */
     public function comments(): MorphMany
     {
-        return $this->morphMany(\App\Models\Comment::class, 'commentable')->latest();
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     /**
@@ -75,7 +75,7 @@ class Post extends Model
      */
     public function likes(): MorphMany
     {
-        return $this->morphMany(\App\Models\Like::class, 'likeable');
+        return $this->morphMany(Like::class, 'likeable');
     }
 
     /*
@@ -86,7 +86,7 @@ class Post extends Model
 
     public function getCoverUrlAttribute(): ?string
     {
-        return $this->cover ? asset('storage/' . $this->cover) : null;
+        return storage_url($this->cover);
     }
 
     /*

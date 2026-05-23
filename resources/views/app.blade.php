@@ -7,6 +7,9 @@
   {{-- CSRF for forms/AJAX --}}
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
+  {{-- Preconnect to self for faster asset loading --}}
+  <link rel="preconnect" href="{{ url('/') }}">
+
   {{-- Basic SEO defaults (can be overridden by @inertiaHead from pages) --}}
   @php
     use App\Models\Setting;
@@ -14,6 +17,7 @@
     $tagline      = Setting::get('tagline', '');
     $metaDesc     = Setting::get('meta_description', $tagline ?: $siteName);
     $favicon      = Setting::get('site_favicon_url');
+    $faviconUrl   = $favicon && ! str_starts_with($favicon, 'http') ? asset($favicon) : $favicon;
     $canonicalUrl = url()->current();
   @endphp
   <meta name="description" content="{{ e($metaDesc) }}">
@@ -24,16 +28,16 @@
   <link rel="sitemap"   type="application/xml"      title="Sitemap"         href="{{ url('/sitemap.xml') }}">
 
   {{-- Favicon: Settings > site_favicon_url if set, else default --}}
-  @if ($favicon)
-    <link rel="icon" href="{{ $favicon }}">
+  @if ($faviconUrl)
+    <link rel="icon" href="{{ $faviconUrl }}">
   @else
     <link rel="icon" href="{{ url('/favicon.ico') }}">
   @endif
 
-  {{-- Optional theme color for address bar tinting --}}
+  {{-- Theme color for mobile address bar tinting --}}
   <meta name="theme-color" content="#0f172a">
 
-  {{-- ✅ Ziggy: exposes window.Ziggy so route() works client-side.
+  {{-- Ziggy: exposes window.Ziggy so route() works client-side.
        Keep this BEFORE Vite so the plugin can pick it up. --}}
   @routes
 

@@ -4,14 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{
-    BelongsTo,
-    BelongsToMany,
-    HasMany,
-    HasOne,
-    MorphMany
-};
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Book extends Model
 {
@@ -34,12 +28,12 @@ class Book extends Model
     ];
 
     protected $casts = [
-        'user_id'      => 'integer',
-        'pages'        => 'integer',
+        'user_id' => 'integer',
+        'pages' => 'integer',
         'release_date' => 'date',
         'published_at' => 'datetime',
-        'meta_json'    => 'array',
-        'status'       => 'string',
+        'meta_json' => 'array',
+        'status' => 'string',
     ];
 
     protected $appends = ['cover_url'];
@@ -76,8 +70,7 @@ class Book extends Model
     public function primaryLink(): HasOne
     {
         return $this->hasOne(BookLink::class, 'book_id')
-            ->where('is_primary', true)
-            ->orderByRaw('COALESCE(sort_order, position, 0) ASC, id ASC');
+            ->where('is_primary', true);
     }
 
     /** 📈 Link clicks (aggregated at book level) */
@@ -102,7 +95,7 @@ class Book extends Model
     /** 💬 Comments (newest first via ->latest() on relation) */
     public function comments(): MorphMany
     {
-        return $this->morphMany(Comment::class, 'commentable')->latest();
+        return $this->morphMany(Comment::class, 'commentable');
     }
 
     /** ❤️ Likes */
@@ -117,30 +110,7 @@ class Book extends Model
 
     public function getCoverUrlAttribute(): ?string
     {
-        $cover = $this->cover;
-
-        if (!$cover) {
-            return null;
-        }
-
-        // If it's already a full URL, return as-is
-        if (filter_var($cover, FILTER_VALIDATE_URL)) {
-            return $cover;
-        }
-
-        // Normalize local storage path
-        $path = ltrim($cover, '/');
-        if (str_starts_with($path, 'storage/')) {
-            $path = substr($path, 8); // drop 'storage/' prefix
-        }
-
-        // Prefer public disk if file exists
-        if (Storage::disk('public')->exists($path)) {
-            return Storage::url($path); // /storage/...
-        }
-
-        // Fallback to asset() so older uploads still resolve
-        return asset('storage/' . $path);
+        return storage_url($this->cover);
     }
 
     /* -----------------------------------------------------------------

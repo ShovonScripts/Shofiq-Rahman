@@ -2,10 +2,11 @@
 import { computed } from 'vue'
 import { Head, usePage, Link } from '@inertiajs/vue3'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const page = usePage()
 const profile = computed(() => page.props?.profile || null)
-const md = (t) => (t ? marked.parse(t) : '')
+const md = (t) => (t ? DOMPurify.sanitize(marked.parse(t)) : '')
 
 /* Bengali date formatter (handles ISO/YYYY) */
 const formatBnDate = (val) => {
@@ -25,8 +26,8 @@ const formatBnDate = (val) => {
 <template>
   <div class="overflow-x-hidden">
     <Head>
-      <title>কাইজার চৌধুরী</title>
-      <meta name="description" content="বাংলা একাডেমি পুরস্কারপ্রাপ্ত সাহিত্যিক কাইজার চৌধুরীর জীবনী, অর্জন এবং সাহিত্যকর্ম সম্পর্কে জানুন" />
+      <title>{{ profile?.name || $page.props.settings?.site_name || 'About' }}</title>
+      <meta name="description" :content="`লেখকের জীবনী, অর্জন এবং সাহিত্যকর্ম সম্পর্কে জানুন`" />
     </Head>
 
     <!-- ===== Cover (fixed 16:9), avatar UNDER it (no overlap) ===== -->
@@ -213,7 +214,7 @@ const formatBnDate = (val) => {
         <div class="rounded-md sm:rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-sm">
           <div class="px-3 sm:px-8 py-6 sm:py-8 text-center">
             <h3 class="heading-bangla text-xl sm:text-2xl mb-3 sm:mb-4">লেখকের সাহিত্যকর্ম এক্সপ্লোর করুন</h3>
-            <p class="text-muted mb-5 sm:mb-6 font-sans text-base sm:text-lg">কাইজার চৌধুরীর বই এবং লেখা পড়ুন</p>
+            <p class="text-muted mb-5 sm:mb-6 font-sans text-base sm:text-lg">বই এবং লেখা পড়ুন</p>
             <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Link href="/books" class="btn-bangla btn-bangla-primary">বই দেখুন</Link>
               <Link href="/blog" class="btn-bangla btn-bangla-secondary">ব্লগ পড়ুন</Link>

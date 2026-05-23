@@ -1,11 +1,14 @@
-<script setup>
+﻿<script setup>
+import { ref } from 'vue'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 
 defineOptions({ layout: AdminLayout })
 
+const busyId = ref(null)
+
 const props = defineProps({ 
-  messages: { type: Object, required: true }
+  messages: { type: Object, default: () => ({ data: [], total: 0, from: 0, to: 0, current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null }) }
 })
 
 // ✅ Delete Message
@@ -183,19 +186,19 @@ const hasReply = (message) => {
         <table class="w-full">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Contact Info
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Message
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Received
               </th>
-              <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-3 py-3 sm:px-6 sm:py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -222,7 +225,7 @@ const hasReply = (message) => {
               class="hover:bg-gray-50 transition-colors duration-150"
               :class="(message.status === 'unread' || message.status === 'new') ? 'bg-blue-50' : ''"
             >
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="flex items-start">
                   <div class="bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center mr-3 flex-shrink-0">
                     <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +246,7 @@ const hasReply = (message) => {
                 </div>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="max-w-xs">
                   <p class="font-medium text-gray-900 leading-relaxed">
                     {{ message.subject || 'No Subject' }}
@@ -262,11 +265,11 @@ const hasReply = (message) => {
                 </div>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span
                   class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize cursor-pointer"
                   :class="[getStatusColor(message.status).bg, getStatusColor(message.status).text]"
-                  @click="toggleStatus(message.id, message.status)"
+                  @click="toggleStatus(message.id, message.status)" :disabled="busyId === message.id"
                   :title="(message.status === 'unread' || message.status === 'new') ? 'Mark as read' : 'Mark as unread'"
                 >
                   <span 
@@ -277,13 +280,13 @@ const hasReply = (message) => {
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <span class="text-gray-700 text-sm">
                   {{ formatDate(message.created_at) }}
                 </span>
               </td>
 
-              <td class="px-6 py-4">
+              <td class="px-3 py-3 sm:px-6 sm:py-4">
                 <div class="flex justify-end gap-2">
                   <Link
                     :href="`/dashboard/contacts/${message.id}`"
@@ -296,7 +299,7 @@ const hasReply = (message) => {
                     View
                   </Link>
                   <button
-                    @click="destroy(message.id)"
+                    @click="destroy(message.id)" :disabled="busyId === message.id"
                     class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
                   >
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,7 +317,7 @@ const hasReply = (message) => {
       <!-- ✅ Pagination -->
       <div
         v-if="messages.prev_page_url || messages.next_page_url"
-        class="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        class="px-3 py-3 sm:px-6 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div class="text-sm text-gray-700">
           Showing {{ messages.from }} to {{ messages.to }} of {{ messages.total }} results

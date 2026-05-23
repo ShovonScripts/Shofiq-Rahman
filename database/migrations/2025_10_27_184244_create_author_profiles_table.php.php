@@ -4,8 +4,10 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up(): void {
+return new class extends Migration
+{
+    public function up(): void
+    {
         Schema::create('author_profiles', function (Blueprint $table) {
             $table->id();
             $table->string('name')->default('Author Name');
@@ -17,7 +19,7 @@ return new class extends Migration {
             $table->string('website')->nullable();
 
             $table->text('bio_md')->nullable();                 // Markdown bio
-            $table->text('achievements_summary_md')->nullable();// Optional long summary top of page
+            $table->text('achievements_summary_md')->nullable(); // Optional long summary top of page
 
             $table->string('avatar_path')->nullable();
             $table->string('cover_path')->nullable();
@@ -29,7 +31,8 @@ return new class extends Migration {
         });
     }
 
-    public function down(): void {
+    public function down(): void
+    {
         Schema::dropIfExists('author_profiles');
     }
 };

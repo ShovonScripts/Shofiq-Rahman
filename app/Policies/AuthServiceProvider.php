@@ -2,10 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Post;
 use App\Models\Book;
-use App\Policies\PostPolicy;
-use App\Policies\BookPolicy;
+use App\Models\Post;
 use Illuminate\Support\ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider

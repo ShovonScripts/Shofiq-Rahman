@@ -157,10 +157,10 @@ function formatReplyDate(date) {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:p-6">
       <!-- Message Details -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 h-full">
-        <div class="p-6">
+        <div class="p-4 sm:p-6">
           <h2 class="text-lg font-bold text-gray-900 mb-4">Message Details</h2>
           
           <!-- Sender Information -->
@@ -222,7 +222,7 @@ function formatReplyDate(date) {
 
       <!-- Reply Form -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 h-full">
-        <div class="p-6">
+        <div class="p-4 sm:p-6">
           <h2 class="text-lg font-bold text-gray-900 mb-4">Send Reply</h2>
           
           <form @submit.prevent="sendReply" class="space-y-4">

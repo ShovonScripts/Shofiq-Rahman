@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 
 class AdminUserSeeder extends Seeder
 {
@@ -13,7 +13,7 @@ class AdminUserSeeder extends Seeder
         // যদি admin ইতিমধ্যে থাকে, ডুপ্লিকেট হবে না
         $admin = User::where('email', 'admin@example.com')->first();
 
-        if (!$admin) {
+        if (! $admin) {
             User::create([
                 'name' => 'Administrator',
                 'email' => 'admin@example.com',

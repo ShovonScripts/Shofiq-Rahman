@@ -4,7 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue'
 
 defineOptions({ layout: AdminLayout })
 
-const props = defineProps({ events: Array })
+const props = defineProps({ events: { type: Array, default: () => [] } })
 
 const destroy = (id) => {
   if (confirm('Are you sure you want to delete this event?')) {

@@ -1,45 +1,41 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
-use Inertia\Inertia;
-
-// Public controllers
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\PostController;
+use App\Http\Controllers\AboutController;
 use App\Http\Controllers\BookController;
-use App\Http\Controllers\ContactController;
-use App\Http\Controllers\FeedController;
-use App\Http\Controllers\CommentController;
-use App\Http\Controllers\LikeController;
 use App\Http\Controllers\BookLinkController as PublicBookLinkController;
-use App\Http\Controllers\AboutController; // Public About page
-
-// Dashboard controllers
-use App\Http\Controllers\Dashboard\DashboardController;               // main dashboard
-use App\Http\Controllers\Dashboard\HomepageController;
-use App\Http\Controllers\Dashboard\PostController as DashboardPostController;
-use App\Http\Controllers\Dashboard\BookController as DashboardBookController;
-use App\Http\Controllers\Dashboard\BookLinkController as DashboardBookLinkController;
-use App\Http\Controllers\Dashboard\GenreController as DashboardGenreController;
-use App\Http\Controllers\Dashboard\CommentController as DashboardCommentController;
-use App\Http\Controllers\Dashboard\ContactMessageController as DashboardContactController;
-use App\Http\Controllers\Dashboard\SettingController;
-use App\Http\Controllers\Dashboard\UserController as AdminUserController;
-use App\Http\Controllers\Dashboard\CategoryController as DashboardCategoryController;
-
-// Dashboard About controllers
-use App\Http\Controllers\Dashboard\AuthorProfileController;
+// Public controllers
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Dashboard\AuthorAchievementController;
 use App\Http\Controllers\Dashboard\AuthorEventController;
-
-// Models used in sitemap builder
-use App\Models\Post;
-use App\Models\Category;
-
-// ✅ Explicit model binding target for public link redirect
+use App\Http\Controllers\Dashboard\AuthorProfileController;
+use App\Http\Controllers\Dashboard\BookController as DashboardBookController;
+use App\Http\Controllers\Dashboard\BookLinkController as DashboardBookLinkController;
+use App\Http\Controllers\Dashboard\CategoryController as DashboardCategoryController;
+use App\Http\Controllers\Dashboard\CommentController as DashboardCommentController;
+use App\Http\Controllers\Dashboard\ContactMessageController as DashboardContactController; // Public About page
+// Dashboard controllers
+use App\Http\Controllers\Dashboard\DashboardController;               // main dashboard
+use App\Http\Controllers\Dashboard\GenreController as DashboardGenreController;
+use App\Http\Controllers\Dashboard\HomepageController;
+use App\Http\Controllers\Dashboard\PostController as DashboardPostController;
+use App\Http\Controllers\Dashboard\SettingController;
+use App\Http\Controllers\Dashboard\SeoController;
+use App\Http\Controllers\Dashboard\UserController as AdminUserController;
+use App\Http\Controllers\FeedController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LikeController;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\ProfileController;
+// Dashboard About controllers
 use App\Models\BookPurchaseLink;
+use App\Models\Category;
+use App\Models\Post;
+// Models used in sitemap builder
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Route;
+// ✅ Explicit model binding target for public link redirect
+use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -108,10 +104,18 @@ Route::get('/sitemap.xml', function () {
 
         $cats = Category::select('slug', 'updated_at')->get();
 
+        $books = Book::published()
+            ->orderByDesc('created_at')
+            ->select('slug', 'updated_at')
+            ->limit(500)
+            ->get();
+
+        $genres = \App\Models\Genre::select('slug', 'updated_at')->get();
+
         $items = [];
         $add = function (string $loc, ?string $lastmod = null, string $changefreq = 'weekly', string $priority = '0.7') use (&$items) {
             $locEsc = e($loc);
-            $last   = $lastmod ? '<lastmod>' . e($lastmod) . '</lastmod>' : '';
+            $last = $lastmod ? '<lastmod>'.e($lastmod).'</lastmod>' : '';
             $items[] = "<url><loc>{$locEsc}</loc>{$last}<changefreq>{$changefreq}</changefreq><priority>{$priority}</priority></url>";
         };
 
@@ -121,6 +125,7 @@ Route::get('/sitemap.xml', function () {
         $add("{$site}/contact", $nowIso, 'monthly', '0.3');
         $add("{$site}/blog", $nowIso, 'daily', '0.8');
         $add("{$site}/books", $nowIso, 'weekly', '0.7');
+        $add("{$site}/categories", $nowIso, 'weekly', '0.6');
 
         foreach ($cats as $c) {
             $add("{$site}/category/{$c->slug}", optional($c->updated_at)->toAtomString(), 'weekly', '0.6');
@@ -131,14 +136,23 @@ Route::get('/sitemap.xml', function () {
             $add("{$site}/lekha/{$p->slug}", $last, 'weekly', '0.8');
         }
 
+        foreach ($books as $b) {
+            $last = optional($b->updated_at)->toAtomString();
+            $add("{$site}/boi/{$b->slug}", $last, 'monthly', '0.6');
+        }
+
+        foreach ($genres as $g) {
+            $add("{$site}/genre/{$g->slug}", optional($g->updated_at)->toAtomString(), 'monthly', '0.5');
+        }
+
         return '<?xml version="1.0" encoding="UTF-8"?>'
-            . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-            . implode('', $items)
-            . '</urlset>';
+            .'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            .implode('', $items)
+            .'</urlset>';
     });
 
     return response($xml, 200, [
-        'Content-Type'  => 'application/xml; charset=UTF-8',
+        'Content-Type' => 'application/xml; charset=UTF-8',
         'Cache-Control' => 'public, max-age=3600',
     ]);
 })->name('sitemap')->middleware('cache.headers:public;max_age=3600;etag');
@@ -155,7 +169,9 @@ Route::controller(PostController::class)->group(function () {
     Route::get('/blog', 'index')->name('blog');
     Route::get('/search', 'search')->name('search');
     Route::get('/lekha/{slug}', 'show')->name('posts.show');
+    Route::get('/categories', 'categoriesIndex')->name('categories.index');
     Route::get('/category/{slug}', 'byCategory')->name('category.show');
+    Route::get('/genre/{slug}', 'byGenre')->name('genre.show');
 });
 
 /*
@@ -186,7 +202,7 @@ Route::get('/go/book-link/{link}', [PublicBookLinkController::class, 'go'])
 */
 // Main dashboard index (Ziggy-friendly) → author/admin only
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureAdmin::class . ':author'])
+    ->middleware(['auth', 'verified', \App\Http\Middleware\EnsureAdmin::class.':author'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -202,13 +218,13 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 // Entire dashboard area → author/admin only
-Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureAdmin::class . ':author'])
+Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureAdmin::class.':author'])
     ->prefix('dashboard')
     ->name('dashboard.')
     ->group(function () {
 
         // Admin-only routes
-        Route::middleware([\App\Http\Middleware\EnsureAdmin::class . ':admin'])->group(function () {
+        Route::middleware([\App\Http\Middleware\EnsureAdmin::class.':admin'])->group(function () {
 
             // Users management
             Route::resource('users', AdminUserController::class)->except(['create', 'edit']);
@@ -243,11 +259,11 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureAdmin::class .
                 ->name('contacts.update')->whereNumber('message'); // status update route
         });
 
-// Posts management (for authors and admins)
-Route::resource('posts', DashboardPostController::class)->except(['show']);
-Route::patch('/posts/{post}/toggle', [DashboardPostController::class, 'toggle'])
-    ->name('posts.toggle')
-    ->whereNumber('post');
+        // Posts management (for authors and admins)
+        Route::resource('posts', DashboardPostController::class)->except(['show']);
+        Route::patch('/posts/{post}/toggle', [DashboardPostController::class, 'toggle'])
+            ->name('posts.toggle')
+            ->whereNumber('post');
 
         // Books management
         Route::resource('books', DashboardBookController::class)->except(['show']);
@@ -280,6 +296,11 @@ Route::patch('/posts/{post}/toggle', [DashboardPostController::class, 'toggle'])
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [SettingController::class, 'update'])->name('settings.update');
         Route::post('/settings/test-email', [SettingController::class, 'sendTestEmail'])->name('settings.test');
+
+        // SEO Manager
+        Route::get('/seo', [SeoController::class, 'index'])->name('seo.index');
+        Route::patch('/seo', [SeoController::class, 'update'])->name('seo.update');
+        Route::get('/seo/analyze', [SeoController::class, 'analyze'])->name('seo.analyze');
 
         /*
         |--------------------------------------------------------------------------
@@ -346,4 +367,4 @@ if (app()->environment('local')) {
     });
 }
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class AuthorEvent extends Model
 {
     protected $fillable = [
-        'author_profile_id','happened_at','headline','description_md','image_path','location','sort_order','is_published'
+        'author_profile_id', 'happened_at', 'headline', 'description_md', 'image_path', 'location', 'sort_order', 'is_published',
     ];
 
     protected $casts = [
@@ -15,11 +15,13 @@ class AuthorEvent extends Model
         'is_published' => 'boolean',
     ];
 
-    public function profile() {
+    public function profile()
+    {
         return $this->belongsTo(AuthorProfile::class, 'author_profile_id');
     }
 
-    public function getImageUrlAttribute(): ?string {
-        return $this->image_path ? url('storage/'.$this->image_path) : null;
+    public function getImageUrlAttribute(): ?string
+    {
+        return storage_url($this->image_path);
     }
 }

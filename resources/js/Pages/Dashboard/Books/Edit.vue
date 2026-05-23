@@ -1,5 +1,5 @@
 <script setup>
-import { useForm, Link, Head } from '@inertiajs/vue3'
+import { useForm, Link, Head, router } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
 
 defineOptions({ layout: AdminLayout })

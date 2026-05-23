@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Genre;
+use App\Support\CacheKeys;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -49,7 +51,7 @@ class GenreController extends Controller
             $i = 1;
 
             while (Genre::where('slug', $slug)->exists()) {
-                $slug = $base . '-' . Str::random(4) . ($i > 1 ? $i : '');
+                $slug = $base.'-'.Str::random(4).($i > 1 ? $i : '');
                 $i++;
             }
 
@@ -57,6 +59,8 @@ class GenreController extends Controller
         }
 
         Genre::create($data);
+
+        Cache::forget(CacheKeys::allGenres());
 
         return redirect()
             ->route('dashboard.genres.index')
@@ -70,7 +74,7 @@ class GenreController extends Controller
     {
         return Inertia::render('Dashboard/Genres/Edit', [
             'genre' => [
-                'id'   => $genre->id,
+                'id' => $genre->id,
                 'name' => $genre->name,
                 'slug' => $genre->slug,
             ],
@@ -84,10 +88,12 @@ class GenreController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'slug' => ['required', 'string', 'max:160', 'unique:genres,slug,' . $genre->id],
+            'slug' => ['required', 'string', 'max:160', 'unique:genres,slug,'.$genre->id],
         ]);
 
         $genre->update($data);
+
+        Cache::forget(CacheKeys::allGenres());
 
         return redirect()
             ->route('dashboard.genres.index')
@@ -100,6 +106,8 @@ class GenreController extends Controller
     public function destroy(Genre $genre)
     {
         $genre->delete();
+
+        Cache::forget(CacheKeys::allGenres());
 
         return redirect()
             ->route('dashboard.genres.index')

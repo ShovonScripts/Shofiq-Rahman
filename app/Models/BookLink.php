@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BookLink extends Model
 {
@@ -43,5 +44,8 @@ class BookLink extends Model
         return $q->orderByRaw('COALESCE(sort_order, position, 0) ASC, id ASC');
     }
 
-    public function scopePrimary($q) { return $q->where('is_primary', true); }
+    public function scopePrimary($q)
+    {
+        return $q->where('is_primary', true);
+    }
 }

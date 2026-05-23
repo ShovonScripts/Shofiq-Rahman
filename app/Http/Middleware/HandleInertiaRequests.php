@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\Setting;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -30,65 +30,100 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        // ✅ Frequently used settings
-        $siteName = Setting::get('site_name', config('app.name'));
-        $tagline  = Setting::get('tagline', '');
-        $metaDesc = Setting::get('meta_description', 'বাংলা লেখকদের জন্য সহজ ব্লগিং প্ল্যাটফর্ম।');
-        $metaImg  = Setting::get('meta_image', null);
+        // ✅ Single cache call instead of 7 separate reads
+        $s = Setting::allCached();
 
-        // ✅ Branding
-        $logoUrl    = Setting::get('site_logo_url', null);
-        $faviconUrl = Setting::get('site_favicon_url', null);
+        $siteName = $s['site_name'] ?? config('app.name');
+        $tagline = $s['tagline'] ?? '';
+        $metaDesc = $s['meta_description'] ?? 'বাংলা লেখকদের জন্য সহজ ব্লগিং প্ল্যাটফর্ম।';
+        $metaImg = $s['meta_image'] ?? null;
+        $metaKeywords = $s['meta_keywords'] ?? '';
+        $metaTitle = $s['meta_title'] ?? $siteName;
+        $logoUrl = $s['site_logo_url'] ?? null;
+        $faviconUrl = $s['site_favicon_url'] ?? null;
 
-        // ✅ Social links (always keep 3 keys)
-        $social = Setting::getJson('social_links', [
+        // Convert relative brand paths to absolute URLs (not affected by env change)
+        $logoUrl = $logoUrl && ! str_starts_with($logoUrl, 'http') ? asset($logoUrl) : $logoUrl;
+        $faviconUrl = $faviconUrl && ! str_starts_with($faviconUrl, 'http') ? asset($faviconUrl) : $faviconUrl;
+        $gaId = $s['google_analytics_id'] ?? '';
+        $gtmId = $s['google_tag_manager_id'] ?? '';
+        $gsc = $s['google_site_verification'] ?? '';
+        $bing = $s['bing_site_verification'] ?? '';
+        $yandex = $s['yandex_site_verification'] ?? '';
+        $fbPixel = $s['facebook_pixel_id'] ?? '';
+        $fbAppId = $s['facebook_app_id'] ?? '';
+        $twitterHandle = $s['twitter_handle'] ?? '';
+        $canonical = $s['canonical_url'] ?? '';
+
+        $socialRaw = $s['social_links'] ?? null;
+        $social = $socialRaw ? json_decode($socialRaw, true) : [
             'facebook' => null,
-            'twitter'  => null,
-            'youtube'  => null,
-        ]);
+            'twitter' => null,
+            'youtube' => null,
+        ];
+        if (! is_array($social)) {
+            $social = ['facebook' => null, 'twitter' => null, 'youtube' => null];
+        }
 
         return array_merge(parent::share($request), [
             // ✅ Logged-in user info with role
             'auth' => [
                 'user' => $request->user() ? [
-                    'id'    => $request->user()->id,
-                    'name'  => $request->user()->name,
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
                     'email' => $request->user()->email,
-                    'role'  => $request->user()->role,
+                    'role' => $request->user()->role,
                 ] : null,
             ],
 
             // ✅ App-wide info
             'app' => [
                 'name' => config('app.name', 'Writers'),
-                'url'  => config('app.url', url('/')),
+                'url' => config('app.url', url('/')),
             ],
 
             // ✅ Global SEO meta
             'meta' => [
-                'title'       => $siteName,
+                'title' => $metaTitle,
                 'description' => $metaDesc,
-                'image'       => $metaImg,
+                'image' => $metaImg,
+                'keywords' => $metaKeywords,
             ],
 
-            // ✅ Settings accessible in frontend (now includes social_links)
+            // ✅ SEO (all raw settings for the frontend)
+            'seo' => [
+                'meta_title' => $metaTitle,
+                'meta_description' => $metaDesc,
+                'meta_image' => $metaImg,
+                'meta_keywords' => $metaKeywords,
+                'google_analytics_id' => $gaId,
+                'google_tag_manager_id' => $gtmId,
+                'google_site_verification' => $gsc,
+                'bing_site_verification' => $bing,
+                'yandex_site_verification' => $yandex,
+                'facebook_pixel_id' => $fbPixel,
+                'facebook_app_id' => $fbAppId,
+                'twitter_handle' => $twitterHandle,
+            ],
+
+            // ✅ Settings accessible in frontend
             'settings' => [
-                'site_name'     => $siteName,
-                'tagline'       => $tagline,
-                'social_links'  => $social,
+                'site_name' => $siteName,
+                'tagline' => $tagline,
+                'social_links' => $social,
             ],
 
             // ✅ Brand (for Navbar/Footer etc.)
             'brand' => [
-                'name'    => $siteName,
-                'logo'    => $logoUrl,
+                'name' => $siteName,
+                'logo' => $logoUrl,
                 'favicon' => $faviconUrl,
             ],
 
             // ✅ Flash messages
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
-                'error'   => fn () => $request->session()->get('error'),
+                'error' => fn () => $request->session()->get('error'),
             ],
         ]);
     }

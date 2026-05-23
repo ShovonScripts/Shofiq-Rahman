@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Support\CacheKeys;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -20,14 +22,14 @@ class CategoryController extends Controller
         $q = trim((string) $request->get('q', ''));
 
         $categories = Category::query()
-            ->when($q, fn($sql) => $sql->where('name', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%"))
+            ->when($q, fn ($sql) => $sql->where('name', 'like', "%{$q}%")->orWhere('slug', 'like', "%{$q}%"))
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('Dashboard/Categories/Index', [
             'filters' => ['q' => $q],
-            'items'   => $categories,
+            'items' => $categories,
         ]);
     }
 
@@ -39,8 +41,8 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:120|unique:categories,name',
-            'slug'        => 'nullable|string|max:160|unique:categories,slug',
+            'name' => 'required|string|max:120|unique:categories,name',
+            'slug' => 'nullable|string|max:160|unique:categories,slug',
             'description' => 'nullable|string|max:1000',
         ]);
 
@@ -54,10 +56,13 @@ class CategoryController extends Controller
         }
 
         Category::create([
-            'name'        => $data['name'],
-            'slug'        => $slug,
+            'name' => $data['name'],
+            'slug' => $slug,
             'description' => $data['description'] ?? null,
         ]);
+
+        Cache::forget(CacheKeys::allCategories());
+        Cache::forget(CacheKeys::categoriesWithPostCount());
 
         return redirect()->route('dashboard.categories.index')->with('success', 'Category created.');
     }
@@ -66,9 +71,9 @@ class CategoryController extends Controller
     {
         return Inertia::render('Dashboard/Categories/Edit', [
             'item' => [
-                'id'          => $category->id,
-                'name'        => $category->name,
-                'slug'        => $category->slug,
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
                 'description' => $category->description,
             ],
         ]);
@@ -77,8 +82,8 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:120|unique:categories,name,' . $category->id,
-            'slug'        => 'nullable|string|max:160|unique:categories,slug,' . $category->id,
+            'name' => 'required|string|max:120|unique:categories,name,'.$category->id,
+            'slug' => 'nullable|string|max:160|unique:categories,slug,'.$category->id,
             'description' => 'nullable|string|max:1000',
         ]);
 
@@ -92,10 +97,13 @@ class CategoryController extends Controller
         }
 
         $category->update([
-            'name'        => $data['name'],
-            'slug'        => $slug,
+            'name' => $data['name'],
+            'slug' => $slug,
             'description' => $data['description'] ?? null,
         ]);
+
+        Cache::forget(CacheKeys::allCategories());
+        Cache::forget(CacheKeys::categoriesWithPostCount());
 
         return back()->with('success', 'Category updated.');
     }
@@ -103,6 +111,10 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         $category->delete();
+
+        Cache::forget(CacheKeys::allCategories());
+        Cache::forget(CacheKeys::categoriesWithPostCount());
+
         return back()->with('success', 'Category deleted.');
     }
 }

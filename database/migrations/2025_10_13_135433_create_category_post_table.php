@@ -10,14 +10,13 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-{
-    Schema::create('category_post', function (Blueprint $table) {
-        $table->foreignId('post_id')->constrained()->cascadeOnDelete();
-        $table->foreignId('category_id')->constrained()->cascadeOnDelete();
-        $table->primary(['post_id','category_id']);
-    });
-}
-
+    {
+        Schema::create('category_post', function (Blueprint $table) {
+            $table->foreignId('post_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->primary(['post_id', 'category_id']);
+        });
+    }
 
     /**
      * Reverse the migrations.

@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class SettingController extends Controller
@@ -23,22 +23,22 @@ class SettingController extends Controller
     {
         $social = Setting::getJson('social_links', [
             'facebook' => null,
-            'twitter'  => null,
-            'youtube'  => null,
+            'twitter' => null,
+            'youtube' => null,
         ]);
 
         return Inertia::render('Dashboard/Settings/Edit', [
             'form' => [
-                'site_name'         => Setting::get('site_name', config('app.name')),
-                'tagline'           => Setting::get('tagline', ''),
-                'rss_title'         => Setting::get('rss_title', 'Site RSS'),
-                'comment_policy'    => Setting::get('comment_policy', ''),
-                'mail_from_name'    => Setting::get('mail_from_name', config('mail.from.name')),
+                'site_name' => Setting::get('site_name', config('app.name')),
+                'tagline' => Setting::get('tagline', ''),
+                'rss_title' => Setting::get('rss_title', 'Site RSS'),
+                'comment_policy' => Setting::get('comment_policy', ''),
+                'mail_from_name' => Setting::get('mail_from_name', config('mail.from.name')),
                 'mail_from_address' => Setting::get('mail_from_address', config('mail.from.address')),
-                'social_links'      => $social,
-                // previews
-                'site_logo_url'     => Setting::get('site_logo_url', null),
-                'site_favicon_url'  => Setting::get('site_favicon_url', null),
+                'social_links' => $social,
+                // previews (use asset() so they work in any env)
+                'site_logo_url' => ($url = Setting::get('site_logo_url')) ? (str_starts_with($url, 'http') ? $url : asset($url)) : null,
+                'site_favicon_url' => ($url = Setting::get('site_favicon_url')) ? (str_starts_with($url, 'http') ? $url : asset($url)) : null,
             ],
         ]);
     }
@@ -51,38 +51,41 @@ class SettingController extends Controller
         // --- Normalize social URLs so users can type without scheme (e.g., facebook.com/you) ---
         $links = (array) $request->input('social_links', []);
         $normalize = function ($url) {
-            if (!$url) return null;
+            if (! $url) {
+                return null;
+            }
             $u = trim((string) $url);
             // allow "@handle" for YouTube new handles? keep as plain url requirement, but normalize scheme
-            if (!preg_match('~^https?://~i', $u)) {
-                $u = 'https://' . $u;
+            if (! preg_match('~^https?://~i', $u)) {
+                $u = 'https://'.$u;
             }
+
             return $u;
         };
         $request->merge([
             'social_links' => [
                 'facebook' => $normalize(data_get($links, 'facebook')),
-                'twitter'  => $normalize(data_get($links, 'twitter')),
-                'youtube'  => $normalize(data_get($links, 'youtube')),
+                'twitter' => $normalize(data_get($links, 'twitter')),
+                'youtube' => $normalize(data_get($links, 'youtube')),
             ],
         ]);
         // ---------------------------------------------------------------------------------------
 
         $data = $request->validate([
-            'site_name'               => 'required|string|max:120',
-            'tagline'                 => 'nullable|string|max:200',
-            'rss_title'               => 'required|string|max:160',
-            'comment_policy'          => 'nullable|string|max:5000',
-            'mail_from_name'          => 'required|string|max:120',
-            'mail_from_address'       => 'required|email|max:190',
+            'site_name' => 'required|string|max:120',
+            'tagline' => 'nullable|string|max:200',
+            'rss_title' => 'required|string|max:160',
+            'comment_policy' => 'nullable|string|max:5000',
+            'mail_from_name' => 'required|string|max:120',
+            'mail_from_address' => 'required|email|max:190',
 
-            'social_links.facebook'   => 'nullable|url',
-            'social_links.twitter'    => 'nullable|url',
-            'social_links.youtube'    => 'nullable|url',
+            'social_links.facebook' => 'nullable|url',
+            'social_links.twitter' => 'nullable|url',
+            'social_links.youtube' => 'nullable|url',
 
             // Files
-            'logo'                    => 'nullable|file|mimetypes:image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon|mimes:png,jpg,jpeg,webp,svg,ico|max:2048',
-            'favicon'                 => 'nullable|file|mimetypes:image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon|mimes:png,jpg,jpeg,webp,svg,ico|max:1024',
+            'logo' => 'nullable|file|mimetypes:image/png,image/jpeg,image/webp|mimes:png,jpg,jpeg,webp|max:2048',
+            'favicon' => 'nullable|file|mimetypes:image/png,image/jpeg,image/webp,image/x-icon|mimes:png,jpg,jpeg,webp,ico|max:1024',
         ]);
 
         // === Text settings ===
@@ -96,34 +99,30 @@ class SettingController extends Controller
         // Save social as JSON with all 3 keys always present
         $socialJson = [
             'facebook' => data_get($data, 'social_links.facebook'),
-            'twitter'  => data_get($data, 'social_links.twitter'),
-            'youtube'  => data_get($data, 'social_links.youtube'),
+            'twitter' => data_get($data, 'social_links.twitter'),
+            'youtube' => data_get($data, 'social_links.youtube'),
         ];
         Setting::setJson('social_links', $socialJson);
 
         // === File uploads (public/brand) ===
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $ext  = $file->getClientOriginalExtension();
-            $name = 'logo_' . time() . '.' . $ext;
+            $ext = $file->getClientOriginalExtension();
+            $name = 'logo_'.time().'.'.$ext;
 
-            $file->move(public_path('brand'), $name); // save to public/brand
-            $url = asset('brand/' . $name);           // public URL
-
-            Setting::set('site_logo_url', $url);
-            Log::info('Site logo uploaded', ['url' => $url]);
+            $file->move(public_path('brand'), $name);
+            Setting::set('site_logo_url', 'brand/'.$name);
+            Log::info('Site logo uploaded', ['path' => 'brand/'.$name]);
         }
 
         if ($request->hasFile('favicon')) {
             $file = $request->file('favicon');
-            $ext  = $file->getClientOriginalExtension();
-            $name = 'favicon_' . time() . '.' . $ext;
+            $ext = $file->getClientOriginalExtension();
+            $name = 'favicon_'.time().'.'.$ext;
 
             $file->move(public_path('brand'), $name);
-            $url = asset('brand/' . $name);
-
-            Setting::set('site_favicon_url', $url);
-            Log::info('Site favicon uploaded', ['url' => $url]);
+            Setting::set('site_favicon_url', 'brand/'.$name);
+            Log::info('Site favicon uploaded', ['path' => 'brand/'.$name]);
         }
 
         return back()->with('success', 'Settings saved successfully.');
@@ -136,26 +135,27 @@ class SettingController extends Controller
     {
         $data = $request->validate(['to' => 'required|email']);
 
-        $fromName  = Setting::get('mail_from_name', config('mail.from.name'));
+        $fromName = Setting::get('mail_from_name', config('mail.from.name'));
         $fromEmail = Setting::get('mail_from_address', config('mail.from.address'));
 
         // runtime override for this request only
         config([
             'mail.from.address' => $fromEmail,
-            'mail.from.name'    => $fromName,
+            'mail.from.name' => $fromName,
         ]);
 
         try {
             Mail::raw('Test email from your site settings. All good!', function ($m) use ($data, $fromName, $fromEmail) {
                 $m->to($data['to'])
-                  ->subject('Test email ✅')
-                  ->from($fromEmail, $fromName);
+                    ->subject('Test email ✅')
+                    ->from($fromEmail, $fromName);
             });
 
-            return back()->with('success', 'Test email sent to ' . $data['to']);
+            return back()->with('success', 'Test email sent to '.$data['to']);
         } catch (\Throwable $e) {
-            Log::error('Test mail failed: ' . $e->getMessage());
-            return back()->with('error', 'Test email failed: ' . $e->getMessage());
+            Log::error('Test mail failed: '.$e->getMessage());
+
+            return back()->with('error', 'Test email failed: '.$e->getMessage());
         }
     }
 }

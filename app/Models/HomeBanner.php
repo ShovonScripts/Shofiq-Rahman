@@ -3,16 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class HomeBanner extends Model
 {
     protected $fillable = [
         'image',
         'title',
-        'link', 
+        'link',
         'is_active',
-        'sort_order'
+        'sort_order',
     ];
 
     protected $casts = [
@@ -20,31 +19,17 @@ class HomeBanner extends Model
         'sort_order' => 'integer',
     ];
 
-    /**
-     * Get the full image URL with proper storage path handling
-     */
     public function getImageUrlAttribute(): ?string
     {
-        if (!$this->image) {
+        if (! $this->image) {
             return null;
         }
 
-        // Check if the image path is already a full URL (for seeded data or external URLs)
         if (filter_var($this->image, FILTER_VALIDATE_URL)) {
             return $this->image;
         }
 
-        // Handle both absolute paths and relative storage paths
-        $imagePath = $this->image;
-        
-        // Remove 'storage/' prefix if it exists to avoid duplication
-        if (str_starts_with($imagePath, 'storage/')) {
-            $imagePath = substr($imagePath, 8); // Remove 'storage/' prefix
-        }
-
-        return Storage::disk('public')->exists($imagePath) 
-            ? Storage::disk('public')->url($imagePath)
-            : asset('storage/' . $imagePath);
+        return storage_url($this->image);
     }
 
     /**
@@ -68,11 +53,10 @@ class HomeBanner extends Model
      */
     public function getImagePathAttribute(): ?string
     {
-        if (!$this->image) {
+        if (! $this->image) {
             return null;
         }
 
-        // Remove 'storage/' prefix if it exists
         if (str_starts_with($this->image, 'storage/')) {
             return substr($this->image, 8);
         }

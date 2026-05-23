@@ -21,23 +21,23 @@ class BookLinkController extends Controller
     public function store(Book $book, Request $request)
     {
         $data = $request->validate([
-            'label'       => ['required', 'string', 'max:120'],
-            'url'         => ['required', 'url', 'max:1000'],
-            'is_primary'  => ['sometimes', 'boolean'],
+            'label' => ['required', 'string', 'max:120'],
+            'url' => ['required', 'url', 'max:1000'],
+            'is_primary' => ['sometimes', 'boolean'],
         ]);
 
-        $maxOrder  = $book->purchaseLinks()->max('sort_order');
+        $maxOrder = $book->purchaseLinks()->max('sort_order');
         $nextOrder = (int) ($maxOrder ?? 0) + 1;
 
         DB::transaction(function () use ($book, $data, $nextOrder) {
             $link = $book->purchaseLinks()->create([
-                'label'       => $data['label'],
-                'url'         => $data['url'],
-                'is_primary'  => (bool) ($data['is_primary'] ?? false),
-                'sort_order'  => $nextOrder,
+                'label' => $data['label'],
+                'url' => $data['url'],
+                'is_primary' => (bool) ($data['is_primary'] ?? false),
+                'sort_order' => $nextOrder,
             ]);
 
-            if (!empty($data['is_primary'])) {
+            if (! empty($data['is_primary'])) {
                 $book->purchaseLinks()
                     ->where('id', '!=', $link->id)
                     ->update(['is_primary' => false]);
@@ -57,19 +57,19 @@ class BookLinkController extends Controller
         }
 
         $data = $request->validate([
-            'label'       => ['required', 'string', 'max:120'],
-            'url'         => ['required', 'url', 'max:1000'],
-            'is_primary'  => ['sometimes', 'boolean'],
+            'label' => ['required', 'string', 'max:120'],
+            'url' => ['required', 'url', 'max:1000'],
+            'is_primary' => ['sometimes', 'boolean'],
         ]);
 
         DB::transaction(function () use ($book, $link, $data) {
             $link->update([
-                'label'      => $data['label'],
-                'url'        => $data['url'],
+                'label' => $data['label'],
+                'url' => $data['url'],
                 'is_primary' => (bool) ($data['is_primary'] ?? $link->is_primary),
             ]);
 
-            if (!empty($data['is_primary'])) {
+            if (! empty($data['is_primary'])) {
                 $book->purchaseLinks()
                     ->where('id', '!=', $link->id)
                     ->update(['is_primary' => false]);
@@ -95,7 +95,7 @@ class BookLinkController extends Controller
             ->orderBy('sort_order')
             ->get()
             ->values()
-            ->each(function ($item, $idx) {
+            ->each(function (BookLink $item, $idx) {
                 $item->update(['sort_order' => $idx + 1]);
             });
 
@@ -148,7 +148,9 @@ class BookLinkController extends Controller
 
         DB::transaction(function () use ($a, $b) {
             $tmp = $a->sort_order;
+            /** @var BookLink $a */
             $a->update(['sort_order' => $b->sort_order]);
+            /** @var BookLink $b */
             $b->update(['sort_order' => $tmp]);
         });
 

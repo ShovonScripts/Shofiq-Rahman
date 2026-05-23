@@ -4,13 +4,15 @@ import AppLayout from '@/Layouts/AppLayout.vue'
 import { Head, Link } from '@inertiajs/vue3'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
+import PostCard from '@/Components/PostCard.vue'
+import BookCard from '@/Components/BookCard.vue'
 
 const md = new MarkdownIt({ html:false, linkify:true, breaks:true })
 
 export default {
   name: 'Home',
   layout: AppLayout,
-  components: { Head, Link },
+  components: { Head, Link, PostCard, BookCard },
   props: {
     banners: Array,
     latest_posts: Array,
@@ -109,8 +111,8 @@ export default {
 <template>
   <div>
     <Head>
-      <title>কাইজার চৌধুরী সাহিত্য</title>
-      <meta name="description" content="কাইজার চৌধুরী বাংলা সাহিত্যের সমৃদ্ধ সংগ্রহ। শিশুসাহিত্য, প্রবন্ধ ও সমকালীন রচনা।" />
+      <title>{{ $page.props.settings?.site_name || 'Writer' }}</title>
+      <meta name="description" :content="`${$page.props.settings?.site_name || 'Writer'} — বাংলা সাহিত্যের সমৃদ্ধ সংগ্রহ। শিশুসাহিত্য, প্রবন্ধ ও সমকালীন রচনা।`" />
     </Head>
 
     <!-- =========================
@@ -121,8 +123,7 @@ export default {
       class="full-bleed bg-gray-50 border-b border-gray-200"
     >
       <div class="relative overflow-hidden shadow md:shadow-lg">
-        <!-- Full-bleed: no rounded on mobile; rounded on md+ -->
-        <div class="relative aspect-w-16 aspect-h-9 overflow-hidden rounded-none md:rounded-2xl">
+        <div class="relative banner-aspect overflow-hidden rounded-none md:rounded-2xl">
           <div
             v-for="(banner, index) in banners"
             :key="banner.id"
@@ -141,8 +142,10 @@ export default {
               <img
                 :src="banner.image_url"
                 :alt="banner.title || 'Banner'"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-cover object-center"
                 loading="eager"
+                fetchpriority="high"
+                decoding="async"
               />
               <div
                 v-if="banner.title"
@@ -283,59 +286,15 @@ export default {
         </Link>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 px-0">
-        <article
+      <div v-if="latest_posts?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 px-0">
+        <PostCard
           v-for="post in latest_posts"
           :key="post.id"
-          class="group flex flex-col overflow-hidden rounded-md border border-gray-100 shadow-sm bg-white"
-        >
-          <div class="aspect-w-16 aspect-h-9 overflow-hidden">
-            <img
-              v-if="post.cover_url"
-              :src="post.cover_url"
-              :alt="post.title"
-              class="w-full h-full object-cover group-hover:scale-105 transition-smooth"
-              loading="lazy"
-            />
-            <div
-              v-else
-              class="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center"
-            >
-              <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </div>
-          </div>
-
-          <div class="p-3 sm:p-5 flex flex-col flex-1">
-            <h3 class="heading-bangla text-base sm:text-lg mb-1.5 line-clamp-2 group-hover:text-blue-600 transition-colors">
-              <Link :href="`/lekha/${post.slug}`" class="hover:no-underline focus-bangla rounded">
-                {{ post.title }}
-              </Link>
-            </h3>
-
-            <div class="flex items-center text-xs sm:text-sm text-muted mb-2 sm:mb-3 font-sans">
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>{{ post.date }}</span>
-            </div>
-
-            <p class="text-xs sm:text-sm text-muted leading-relaxed-bangla line-clamp-3 font-sans">
-              {{ post.excerpt }}
-            </p>
-
-            <Link
-              :href="`/lekha/${post.slug}`"
-              class="inline-flex items-center mt-3 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors duration-200 group/readmore font-sans focus-bangla rounded"
-            >
-              পড়ুন
-              <svg class="w-4 h-4 ml-1 transform group-hover/readmore:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-        </article>
+          :post="post"
+        />
+      </div>
+      <div v-else class="text-center py-10 px-3">
+        <p class="text-gray-500 text-sm">এখনও কোনো পোস্ট প্রকাশিত হয়নি।</p>
       </div>
     </section>
 
@@ -355,122 +314,15 @@ export default {
           </Link>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 px-0">
-          <article
+        <div v-if="latest_books?.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 px-0">
+          <BookCard
             v-for="book in latest_books"
             :key="book.id"
-            class="group"
-          >
-            <div class="h-full flex flex-col overflow-hidden rounded-md bg-white border border-gray-100 shadow-sm">
-              <div class="book-cover-container overflow-hidden">
-                <img
-                  v-if="book.cover_url"
-                  :src="book.cover_url"
-                  :alt="book.title"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-smooth"
-                  loading="lazy"
-                />
-                <div
-                  v-else
-                  class="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center"
-                >
-                  <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-
-                <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/20 to-transparent"></div>
-
-                <div v-if="book.published_year" class="absolute top-2 right-2">
-                  <span class="bg-black/70 text-white text-[11px] sm:text-xs px-2 py-0.5 rounded-full font-sans">
-                    {{ book.published_year }}
-                  </span>
-                </div>
-              </div>
-
-              <div class="p-3 sm:p-4 flex-1">
-                <h3 class="heading-bangla text-sm sm:text-base mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                  <Link :href="`/books/${book.slug}`" class="hover:no-underline focus-bangla rounded">
-                    {{ book.title }}
-                  </Link>
-                </h3>
-
-                <p
-                  v-if="book.subtitle"
-                  class="text-[12px] sm:text-xs text-muted mt-0.5 line-clamp-2 font-sans"
-                >
-                  {{ book.subtitle }}
-                </p>
-
-                <div class="mt-2 space-y-1">
-                  <div v-if="book.genres && book.genres.length" class="flex flex-wrap gap-1">
-                    <span
-                      v-for="genre in book.genres.slice(0, 2)"
-                      :key="genre.id"
-                      class="inline-block bg-blue-100 text-blue-800 text-[11px] sm:text-xs px-2 py-0.5 rounded font-sans"
-                    >
-                      {{ genre.name }}
-                    </span>
-                    <span
-                      v-if="book.genres.length > 2"
-                      class="inline-block bg-gray-100 text-gray-600 text-[11px] sm:text-xs px-2 py-0.5 rounded font-sans"
-                    >
-                      +{{ book.genres.length - 2 }}
-                    </span>
-                  </div>
-
-                  <div v-if="book.price" class="flex items-center justify-between">
-                    <span class="text-green-600 font-bold text-sm font-sans">
-                      ৳{{ book.price }}
-                    </span>
-                    <span v-if="book.is_available" class="text-green-500 text-[11px] sm:text-xs font-sans">
-                      Available
-                    </span>
-                    <span v-else class="text-red-500 text-[11px] sm:text-xs font-sans">
-                      Out of Stock
-                    </span>
-                  </div>
-
-                  <div v-if="book.pages" class="flex items-center text-[11px] sm:text-xs text-gray-500 font-sans">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    {{ book.pages }} পৃষ্ঠা
-                  </div>
-
-                  <div v-if="book.rating" class="flex items-center">
-                    <div class="flex items-center">
-                      <svg
-                        v-for="star in 5"
-                        :key="star"
-                        class="w-3 h-3"
-                        :class="star <= Math.round(book.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
-                    </div>
-                    <span class="text-[11px] sm:text-xs text-gray-600 ml-1 font-sans">{{ book.rating }}</span>
-                  </div>
-                </div>
-
-                <div class="mt-3 flex gap-2">
-                  <Link
-                    :href="`/books/${book.slug}`"
-                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-[12px] sm:text-xs py-2 px-3 rounded text-center transition-colors duration-200 font-sans"
-                  >
-                    বিস্তারিত
-                  </Link>
-                  <button
-                    v-if="book.preview_url"
-                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-[12px] sm:text-xs py-2 px-3 rounded transition-colors duration-200 font-sans"
-                  >
-                    Preview
-                  </button>
-                </div>
-              </div>
-            </div>
-          </article>
+            :book="book"
+          />
+        </div>
+        <div v-else class="text-center py-10 px-3">
+          <p class="text-gray-500 text-sm">এখনও কোনো বই প্রকাশিত হয়নি।</p>
         </div>
       </div>
     </section>
@@ -535,7 +387,7 @@ export default {
       <div class="rounded-md sm:rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 sm:border-blue-200 shadow-sm">
         <div class="px-4 sm:px-8 py-6 sm:py-8 text-center">
           <h3 class="heading-bangla text-xl sm:text-2xl mb-3 sm:mb-4">আরও সাহিত্যকর্ম এক্সপ্লোর করুন</h3>
-          <p class="text-muted mb-5 sm:mb-6 font-sans text-base sm:text-lg">কাইজার চৌধুরী বই, ব্লগ এবং লেখা পড়ুন</p>
+          <p class="text-muted mb-5 sm:mb-6 font-sans text-base sm:text-lg">বই, ব্লগ এবং লেখা পড়ুন</p>
           <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-3 sm:px-0">
             <Link href="/books" class="btn-bangla btn-bangla-primary">বই দেখুন</Link>
             <Link href="/blog" class="btn-bangla btn-bangla-secondary">ব্লগ পড়ুন</Link>
@@ -558,14 +410,6 @@ export default {
   margin-right: -50vw;
 }
 
-/* Line clamps */
-.line-clamp-2 {
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.line-clamp-3 {
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-}
-
 /* Ticker Animation */
 .ticker-fade-enter-active,
 .ticker-fade-leave-active { transition: all 0.5s ease; }
@@ -573,70 +417,32 @@ export default {
 .ticker-fade-leave-to { opacity: 0; transform: translateX(-30px); }
 .ticker-content { white-space: nowrap; }
 
-/* 16:9 Aspect Ratio (CSS fallback, no plugin) */
-.aspect-w-16 { position: relative; }
-.aspect-h-9::before { content: ''; display: block; padding-bottom: 56.25%; }
-.aspect-h-9 > * {
-  position: absolute; height: 100%; width: 100%;
-  top: 0; right: 0; bottom: 0; left: 0;
-}
-
-/* Book cover 3:4 with subtle depth */
-.book-cover-container {
+/* Banner responsive aspect ratio:
+   Mobile: 16:9
+   Desktop (md+): 8:3 */
+.banner-aspect {
   position: relative;
-  aspect-ratio: 3/4;
-  background: linear-gradient(145deg, #f0f0f0, #e0e0e0);
-  box-shadow:
-    2px 2px 8px rgba(0,0,0,0.08),
-    inset 1px 1px 0 rgba(255,255,255,0.5);
-}
-.book-cover-container::after {
-  content: '';
-  position: absolute;
-  bottom: -4px; left: 4px; right: 4px;
-  height: 8px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
-  border-radius: 50%;
-  filter: blur(4px);
-  z-index: -1;
-}
-.group:hover .book-cover-container {
-  transform: translateY(-2px);
-  box-shadow:
-    4px 4px 16px rgba(0,0,0,0.14),
-    inset 1px 1px 0 rgba(255,255,255,0.5);
-}
-.group:hover .book-cover-container::after {
-  bottom: -6px; height: 12px; filter: blur(6px);
+  aspect-ratio: 16 / 9;
 }
 
-/* Fallbacks */
-@supports not (aspect-ratio: 16 / 9) {
-  .aspect-h-9::before { padding-bottom: 56.25%; }
-  .aspect-h-9 > * { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+@media (min-width: 768px) {
+  .banner-aspect {
+    aspect-ratio: 8 / 3;
+  }
 }
-@supports not (aspect-ratio: 3 / 4) {
-  .book-cover-container::before { content: ''; display: block; padding-bottom: 133.33%; }
-  .book-cover-container > * { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+@supports not (aspect-ratio: 16 / 9) {
+  .banner-aspect::before { content: ''; display: block; padding-bottom: 56.25%; }
+  .banner-aspect > * {
+    position: absolute; height: 100%; width: 100%;
+    top: 0; right: 0; bottom: 0; left: 0;
+  }
+
+  @media (min-width: 768px) {
+    .banner-aspect::before { padding-bottom: 37.5%; }
+  }
 }
 
 /* Images */
-img { max-width: 100%; height: auto; object-fit: cover; }
-
-/* Smooth transitions */
-.transition-smooth { transition: all 0.3s ease; }
-
-/* Mobile tweaks */
-@media (max-width: 640px) {
-  .aspect-h-9::before { padding-bottom: 56.25%; }
-  .book-cover-container { aspect-ratio: 2/3; }
-}
-
-/* Tablet/Desktop keep 16:9 */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .aspect-h-9::before { padding-bottom: 56.25%; }
-}
-@media (min-width: 1025px) {
-  .aspect-h-9::before { padding-bottom: 56.25%; }
-}
+.banner-aspect img { width: 100%; height: 100%; object-fit: cover; }
 </style>

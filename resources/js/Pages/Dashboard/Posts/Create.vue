@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
 
     <!-- ✅ Post Form -->
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div class="p-6">
+      <div class="p-4 sm:p-6">
         <form class="space-y-6" @submit.prevent="submit" novalidate>
           <!-- Title -->
           <div>

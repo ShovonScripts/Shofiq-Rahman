@@ -309,9 +309,8 @@ export default {
             ]"
             :disabled="!link.url || link.active || submitting"
             :aria-current="link.active ? 'page' : undefined"
-            v-html="link.label"
             @click.prevent="go(link)"
-          />
+          >{{ link.label }}</button>
         </div>
       </div>
     </nav>
@@ -323,7 +322,7 @@ export default {
       <div class="px-3 sm:px-0 rounded-md sm:rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 sm:border-blue-200 shadow-sm">
         <div class="px-4 sm:px-8 py-6 sm:py-8 text-center">
           <h3 class="heading-bangla text-xl sm:text-2xl mb-2 sm:mb-3">আরও কন্টেন্ট এক্সপ্লোর করুন</h3>
-          <p class="text-muted mb-5 sm:mb-6 font-sans text-sm sm:text-base">কাইজার চৌধুরীর সাহিত্যকর্ম সম্পর্কে আরও জানুন</p>
+          <p class="text-muted mb-5 sm:mb-6 font-sans text-sm sm:text-base">সাহিত্যকর্ম সম্পর্কে আরও জানুন</p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/books" class="btn-bangla btn-bangla-primary">বই দেখুন</Link>
             <Link href="/about" class="btn-bangla btn-bangla-secondary">লেখক সম্পর্কে</Link>

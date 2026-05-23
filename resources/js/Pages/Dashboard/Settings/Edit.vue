@@ -116,7 +116,7 @@ const sendTestEmail = () => {
 
     <!-- ✅ Settings Form -->
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mb-8">
-      <form @submit.prevent="save" class="p-6 space-y-8" enctype="multipart/form-data">
+      <form @submit.prevent="save" class="p-4 sm:p-6 space-y-8" enctype="multipart/form-data">
         <!-- Site Information Section -->
         <div>
           <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -125,7 +125,7 @@ const sendTestEmail = () => {
             </svg>
             Site Information
           </h2>
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid md:grid-cols-2 gap-4 sm:p-6">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Site Name *</label>
               <input
@@ -192,7 +192,7 @@ const sendTestEmail = () => {
             </svg>
             Mail Configuration
           </h2>
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid md:grid-cols-2 gap-4 sm:p-6">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Mail From Name *</label>
               <input
@@ -239,7 +239,7 @@ const sendTestEmail = () => {
             </svg>
             Social Links
           </h2>
-          <div class="grid md:grid-cols-3 gap-6">
+          <div class="grid md:grid-cols-3 gap-4 sm:p-6">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
               <input
@@ -301,7 +301,7 @@ const sendTestEmail = () => {
             </svg>
             Branding
           </h2>
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid md:grid-cols-2 gap-4 sm:p-6">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Site Logo</label>
               <input
@@ -389,7 +389,7 @@ const sendTestEmail = () => {
 
     <!-- ✅ Test Email Section -->
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div class="p-6 border-b border-gray-200">
+      <div class="p-4 sm:p-6 border-b border-gray-200">
         <h2 class="text-lg font-semibold text-gray-900 flex items-center">
           <svg class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -397,7 +397,7 @@ const sendTestEmail = () => {
           Test Email Configuration
         </h2>
       </div>
-      <form @submit.prevent="sendTestEmail" class="p-6">
+      <form @submit.prevent="sendTestEmail" class="p-4 sm:p-6">
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Recipient Email</label>
