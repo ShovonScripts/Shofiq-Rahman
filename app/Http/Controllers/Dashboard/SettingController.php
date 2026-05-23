@@ -104,15 +104,17 @@ class SettingController extends Controller
         ];
         Setting::setJson('social_links', $socialJson);
 
-        // === File uploads (public/brand) ===
+        // === File uploads (storage/app/public/brand) ===
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
             $ext = $file->getClientOriginalExtension();
             $name = 'logo_'.time().'.'.$ext;
 
-            $file->move(public_path('brand'), $name);
-            Setting::set('site_logo_url', 'brand/'.$name);
-            Log::info('Site logo uploaded', ['path' => 'brand/'.$name]);
+            $dest = storage_path('app/public/brand');
+            if (!is_dir($dest)) mkdir($dest, 0755, true);
+            $file->move($dest, $name);
+            Setting::set('site_logo_url', 'storage/brand/'.$name);
+            Log::info('Site logo uploaded', ['path' => 'storage/brand/'.$name]);
         }
 
         if ($request->hasFile('favicon')) {
@@ -120,9 +122,11 @@ class SettingController extends Controller
             $ext = $file->getClientOriginalExtension();
             $name = 'favicon_'.time().'.'.$ext;
 
-            $file->move(public_path('brand'), $name);
-            Setting::set('site_favicon_url', 'brand/'.$name);
-            Log::info('Site favicon uploaded', ['path' => 'brand/'.$name]);
+            $dest = storage_path('app/public/brand');
+            if (!is_dir($dest)) mkdir($dest, 0755, true);
+            $file->move($dest, $name);
+            Setting::set('site_favicon_url', 'storage/brand/'.$name);
+            Log::info('Site favicon uploaded', ['path' => 'storage/brand/'.$name]);
         }
 
         return back()->with('success', 'Settings saved successfully.');
