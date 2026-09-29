@@ -20,7 +20,7 @@ class AuthorAchievementController extends Controller
 
         return Inertia::render('Dashboard/About/Achievements/Index', [
             'profile' => $profile,
-            'items' => $items,
+            'achievements' => $items,
         ]);
     }
 
@@ -41,7 +41,7 @@ class AuthorAchievementController extends Controller
     public function edit(AuthorAchievement $achievement)
     {
         return Inertia::render('Dashboard/About/Achievements/Edit', [
-            'item' => $achievement,
+            'achievement' => $achievement,
         ]);
     }
 

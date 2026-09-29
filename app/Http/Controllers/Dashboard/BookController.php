@@ -12,10 +12,14 @@ use App\Services\TermSyncService;
 use App\Support\CacheKeys;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BookController extends Controller
@@ -77,7 +81,7 @@ class BookController extends Controller
             'description' => ['nullable', 'string'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:2048'],
             'isbn' => ['nullable', 'string', 'max:32'],
-            'language' => ['nullable', 'string', 'max:16'],
+            'language' => ['nullable', 'string', 'max:10'],
             'pages' => ['nullable', 'integer', 'min:1'],
             'release_date' => ['nullable', 'date'],
             'status' => ['required', 'in:draft,published'],
@@ -97,12 +101,12 @@ class BookController extends Controller
             'links.*.sort_order' => ['nullable', 'integer'],
         ]);
 
-        $slugService = new SlugService();
+        $slugService = new SlugService;
         $slug = (string) ($validated['slug'] ?? '');
         if ($slug === '') {
-            $slug = $slugService->generateUniqueSlug(new Book(), $validated['title']);
+            $slug = $slugService->generateUniqueSlug(new Book, $validated['title']);
         } else {
-            $slug = $slugService->generateUniqueSlug(new Book(), $slug);
+            $slug = $slugService->generateUniqueSlug(new Book, $slug);
         }
 
         $coverPath = null;
@@ -110,38 +114,45 @@ class BookController extends Controller
             $coverPath = $request->file('cover')->store('books/covers', 'public');
         }
 
-        DB::transaction(function () use ($request, $validated, $slug, $coverPath) {
-            /** @var Book $book */
-            $book = new Book;
-            $book->fill([
-                'user_id' => Auth::id(),
-                'title' => $validated['title'],
-                'slug' => $slug,
-                'subtitle' => $validated['subtitle'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'cover' => $coverPath,
-                'isbn' => $validated['isbn'] ?? null,
-                'language' => $validated['language'] ?? null,
-                'pages' => $validated['pages'] ?? null,
-                'release_date' => $validated['release_date'] ?? null,
-                'status' => $validated['status'],
-                'published_at' => $validated['status'] === 'published'
-                                    ? ($validated['published_at'] ?? now())
-                                    : null,
-            ]);
-            $book->save();
+        try {
+            DB::transaction(function () use ($request, $validated, $slug, $coverPath) {
+                /** @var Book $book */
+                $book = new Book;
+                $book->fill([
+                    'user_id' => Auth::id(),
+                    'title' => $validated['title'],
+                    'slug' => $slug,
+                    'subtitle' => $validated['subtitle'] ?? null,
+                    'description' => $validated['description'] ?? null,
+                    'cover' => $coverPath,
+                    'isbn' => $validated['isbn'] ?? null,
+                    'language' => $validated['language'] ?? null,
+                    'pages' => $validated['pages'] ?? null,
+                    'release_date' => $validated['release_date'] ?? null,
+                    'status' => $validated['status'],
+                    'published_at' => $validated['status'] === 'published'
+                                        ? ($validated['published_at'] ?? now())
+                                        : null,
+                ]);
+                $book->save();
 
-            $termSyncService = new TermSyncService();
+                $termSyncService = new TermSyncService;
 
-            if ($request->has('genre_ids') && is_array($request->input('genre_ids'))) {
-                $book->genres()->sync($request->input('genre_ids'));
-            } else {
-                $termSyncService->syncGenres($book, (string) ($validated['genres'] ?? ''));
+                if ($request->has('genre_ids') && is_array($request->input('genre_ids'))) {
+                    $book->genres()->sync($request->input('genre_ids'));
+                } else {
+                    $termSyncService->syncGenres($book, (string) ($validated['genres'] ?? ''));
+                }
+                $termSyncService->syncCategories($book, (string) ($validated['categories'] ?? ''));
+
+                $this->syncPurchaseLinks($book, $validated['links'] ?? $request->input('links', []));
+            });
+        } catch (\Throwable $e) {
+            if ($coverPath) {
+                Storage::disk('public')->delete($coverPath);
             }
-            $termSyncService->syncCategories($book, (string) ($validated['categories'] ?? ''));
-
-            $this->syncPurchaseLinks($book, $validated['links'] ?? $request->input('links', []));
-        });
+            throw $e;
+        }
 
         Cache::forget(CacheKeys::latestBooks());
         Cache::forget(CacheKeys::allCategories());
@@ -209,91 +220,85 @@ class BookController extends Controller
     {
         $this->authorize('update', $book);
 
-        // normalize
-        $request->merge([
-            'title' => trim((string) $request->input('title')),
-            'published_at' => $request->filled('published_at') ? $request->input('published_at') : null,
-        ]);
+        $request->merge(['title' => trim((string) $request->input('title'))]);
+        if ($request->filled('slug') && is_string($request->input('slug'))) {
+            // Validate the final slug, not a value that changes after validation.
+            $request->merge(['slug' => Str::slug($request->input('slug'))]);
+        }
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:books,slug,'.$book->id],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('books', 'slug')->ignore($book->id)],
             'subtitle' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,avif', 'max:2048'],
             'isbn' => ['nullable', 'string', 'max:32'],
-            'language' => ['nullable', 'string', 'max:16'],
+            'language' => ['nullable', 'string', 'max:10'],
             'pages' => ['nullable', 'integer', 'min:1'],
             'release_date' => ['nullable', 'date'],
             'status' => ['required', 'in:draft,published'],
             'published_at' => ['nullable', 'date'],
-
             'genres' => ['nullable', 'string', 'max:500'],
             'categories' => ['nullable', 'string', 'max:500'],
-            'genre_ids' => ['sometimes', 'array'],
+            'genre_ids' => ['nullable', 'array'],
             'genre_ids.*' => ['integer', 'exists:genres,id'],
-
-            // ✅ NEW: links validation (update এর ক্ষেত্রেও)
-            'links' => ['sometimes', 'array'],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'links' => ['nullable', 'array'],
+            'links.*.id' => ['nullable', 'integer', 'distinct', Rule::exists('book_links', 'id')->where('book_id', $book->id)],
             'links.*.label' => ['nullable', 'string', 'max:100'],
             'links.*.url' => ['nullable', 'string', 'max:2048'],
             'links.*.is_primary' => ['nullable', 'boolean'],
-            'links.*.sort_order' => ['nullable', 'integer'],
+            'links.*.sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        DB::transaction(function () use ($request, $validated, $book) {
-            // slug keep/sanitize
-            $slug = $validated['slug'] ?? $book->slug;
-            $slug = $slug ? Str::slug($slug) : $book->slug;
+        $oldCover = $book->cover;
+        $coverPath = $request->hasFile('cover')
+            ? $request->file('cover')->store('books/covers', 'public')
+            : $oldCover;
 
-            // cover replace
-            $coverPath = $book->cover;
-            if ($request->hasFile('cover')) {
-                if ($coverPath) {
-                    Storage::disk('public')->delete($coverPath);
+        try {
+            DB::transaction(function () use ($validated, $book, $coverPath) {
+                $publishedAt = array_key_exists('published_at', $validated)
+                    ? $validated['published_at'] : $book->published_at;
+
+                // Preserve optional fields that older edit forms do not submit.
+                // Explicit null still lets a client clear a field deliberately.
+                $book->fill(Arr::only($validated, [
+                    'title', 'subtitle', 'description', 'isbn', 'language',
+                    'pages', 'release_date', 'status',
+                ]));
+                $book->fill([
+                    'slug' => ($validated['slug'] ?? null) ?: $book->slug,
+                    'cover' => $coverPath,
+                    'published_at' => $validated['status'] === 'published' ? ($publishedAt ?: now()) : null,
+                ])->save();
+
+                $termSyncService = new TermSyncService;
+                if (array_key_exists('genre_ids', $validated)) {
+                    $book->genres()->sync($validated['genre_ids'] ?? []);
+                } elseif (array_key_exists('genres', $validated)) {
+                    $termSyncService->syncGenres($book, $validated['genres'] ?? '');
                 }
-                $coverPath = $request->file('cover')->store('books/covers', 'public');
+                if (array_key_exists('category_ids', $validated)) {
+                    $book->categories()->sync($validated['category_ids'] ?? []);
+                } elseif (array_key_exists('categories', $validated)) {
+                    $termSyncService->syncCategories($book, $validated['categories'] ?? '');
+                }
+                if (array_key_exists('links', $validated)) {
+                    $this->syncPurchaseLinks($book, $validated['links'] ?? []);
+                }
+            });
+        } catch (\Throwable $e) {
+            if ($coverPath && $coverPath !== $oldCover) {
+                Storage::disk('public')->delete($coverPath);
             }
+            throw $e;
+        }
 
-            // published_at transitions
-            $status = $validated['status'];
-            $published_at = $validated['published_at']; // null or date
-
-            if ($status === 'published' && $book->status === 'draft' && ! $published_at) {
-                $published_at = now();
-            }
-            if ($status === 'draft') {
-                $published_at = null;
-            }
-
-            // explicit fill + save
-            $book->fill([
-                'title' => $validated['title'],
-                'slug' => $slug,
-                'subtitle' => $validated['subtitle'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'cover' => $coverPath,
-                'isbn' => $validated['isbn'] ?? null,
-                'language' => $validated['language'] ?? null,
-                'pages' => $validated['pages'] ?? null,
-                'release_date' => $validated['release_date'] ?? null,
-                'status' => $status,
-                'published_at' => $published_at,
-            ])->save();
-
-            $termSyncService = new TermSyncService();
-
-            if ($request->has('genre_ids') && is_array($request->input('genre_ids'))) {
-                $book->genres()->sync($request->input('genre_ids'));
-            } else {
-                $termSyncService->syncGenres($book, (string) ($validated['genres'] ?? ''));
-            }
-            $termSyncService->syncCategories($book, (string) ($validated['categories'] ?? ''));
-
-            $this->syncPurchaseLinks($book, $validated['links'] ?? $request->input('links', []));
-        });
-
-        $book->refresh();
+        if ($oldCover && $coverPath !== $oldCover) {
+            Storage::disk('public')->delete($oldCover);
+        }
 
         Cache::forget(CacheKeys::latestBooks());
         Cache::forget(CacheKeys::allCategories());
@@ -301,8 +306,7 @@ class BookController extends Controller
         Cache::forget('rss.items');
         Cache::forget('sitemap.xml');
 
-        return redirect()
-            ->route('dashboard.books.edit', $book->id)
+        return redirect()->route('dashboard.books.edit', $book->id)
             ->with('success', 'Book updated successfully!');
     }
 
@@ -325,64 +329,47 @@ class BookController extends Controller
             ->with('success', 'Book deleted successfully!');
     }
 
-    /**
-     * 🔗 Purchase links re-create strategy
-     * - আগের সব ডিলিট
-     * - ফর্ম থেকে আসা valid লিংকগুলো insert
-     * - scheme ensure (http/https), invalid URL স্কিপ
-     * - একাধিক is_primary ⇒ প্রথমটাকে true, বাকিগুলো false
-     */
+    /** Update links in place so stable redirect URLs and click history survive edits. */
     private function syncPurchaseLinks(Book $book, array $links): void
     {
-        // পুরোনোগুলো মুছুন
-        $book->purchaseLinks()->delete();
-
-        if (empty($links)) {
-            return;
-        }
-
-        $payload = [];
+        $existing = $book->purchaseLinks()->get()->keyBy('id');
+        $keepIds = [];
         $sawPrimary = false;
-        $i = 0;
 
-        foreach ($links as $link) {
-            $label = trim((string) ($link['label'] ?? ''));
-            $url = trim((string) ($link['url'] ?? ''));
-
-            if ($url === '') {
+        foreach ($links as $index => $attributes) {
+            $url = trim((string) ($attributes['url'] ?? ''));
+            if ($url === '' && empty($attributes['id'])) {
                 continue;
             }
 
-            // ensure scheme
-            $lower = strtolower($url);
-            if (! str_starts_with($lower, 'http://') && ! str_starts_with($lower, 'https://')) {
+            if ($url !== '' && ! preg_match('~^[a-z][a-z0-9+.-]*:~i', $url)) {
                 $url = 'https://'.ltrim($url, '/');
             }
-            if (! filter_var($url, FILTER_VALIDATE_URL)) {
-                continue; // invalid URL skip
+            if (mb_strlen($url) > 2048 || ! filter_var($url, FILTER_VALIDATE_URL)
+                || ! in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)) {
+                throw ValidationException::withMessages(["links.{$index}.url" => 'Enter a valid HTTP or HTTPS purchase URL.']);
             }
 
-            $isPrimary = (bool) ($link['is_primary'] ?? false);
-            if ($isPrimary && ! $sawPrimary) {
-                $sawPrimary = true;      // keep first primary
+            if (! empty($attributes['id'])) {
+                $link = $existing->get((int) $attributes['id']);
+                abort_unless($link, 404);
             } else {
-                $isPrimary = false;      // others forced to false
+                // Backward compatibility for clients that did not send link IDs.
+                $link = $existing->first(fn (BookLink $item) => $item->url === $url && ! in_array($item->id, $keepIds, true));
+                $link ??= $book->purchaseLinks()->make();
             }
 
-            $payload[] = [
-                'book_id' => $book->id,
-                'label' => $label !== '' ? $label : 'Buy',
+            $isPrimary = ! empty($attributes['is_primary']) && ! $sawPrimary;
+            $sawPrimary = $sawPrimary || $isPrimary;
+            $link->fill([
+                'label' => trim((string) ($attributes['label'] ?? '')) ?: 'Buy',
                 'url' => $url,
                 'is_primary' => $isPrimary,
-                'sort_order' => is_numeric($link['sort_order'] ?? null) ? (int) $link['sort_order'] : $i,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-            $i++;
+                'sort_order' => $attributes['sort_order'] ?? $index,
+            ])->save();
+            $keepIds[] = $link->id;
         }
 
-        if ($payload) {
-            BookLink::insert($payload);
-        }
+        $book->purchaseLinks()->whereNotIn('id', $keepIds)->delete();
     }
 }

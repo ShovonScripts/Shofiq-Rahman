@@ -20,6 +20,8 @@ class BookLinkController extends Controller
      */
     public function store(Book $book, Request $request)
     {
+        $this->authorize('update', $book);
+
         $data = $request->validate([
             'label' => ['required', 'string', 'max:120'],
             'url' => ['required', 'url', 'max:1000'],
@@ -52,6 +54,8 @@ class BookLinkController extends Controller
      */
     public function update(Book $book, BookLink $link, Request $request)
     {
+        $this->authorize('update', $book);
+
         if ((int) $link->book_id !== (int) $book->id) {
             abort(404);
         }
@@ -84,6 +88,8 @@ class BookLinkController extends Controller
      */
     public function destroy(Book $book, BookLink $link)
     {
+        $this->authorize('update', $book);
+
         if ((int) $link->book_id !== (int) $book->id) {
             abort(404);
         }
@@ -107,6 +113,8 @@ class BookLinkController extends Controller
      */
     public function makePrimary(Book $book, BookLink $link)
     {
+        $this->authorize('update', $book);
+
         if ((int) $link->book_id !== (int) $book->id) {
             abort(404);
         }
@@ -125,6 +133,8 @@ class BookLinkController extends Controller
      */
     public function bump(Book $book, BookLink $link, string $dir)
     {
+        $this->authorize('update', $book);
+
         if ((int) $link->book_id !== (int) $book->id) {
             abort(404);
         }

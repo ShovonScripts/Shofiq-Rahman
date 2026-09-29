@@ -43,13 +43,22 @@ class ProfileController extends Controller
             'notify_new_comments' => ['nullable', 'boolean'],
         ]);
 
-        $user->update([
+        $user->fill([
             'name' => trim($data['name']),
             'email' => trim($data['email']),
-            'notify_new_comments' => (bool) ($data['notify_new_comments'] ?? false),
         ]);
 
-        return back()->with('success', 'Profile updated.');
+        if (array_key_exists('notify_new_comments', $data)) {
+            $user->notify_new_comments = (bool) $data['notify_new_comments'];
+        }
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return to_route('profile.edit')->with('success', 'Profile updated.');
     }
 
     /**

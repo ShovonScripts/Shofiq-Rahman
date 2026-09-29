@@ -76,7 +76,7 @@ class PostController extends Controller
                 'categories:id,name,slug',
                 'author:id,name',
                 'genres:id,name,slug',
-                'comments' => fn ($q) => $q->with('author:id,name')->latest()->limit(50),
+                'comments' => fn ($q) => $q->approved()->with('author:id,name')->latest()->limit(50),
             ])
             ->withCount('likes')
             ->where('slug', $slug)
@@ -118,11 +118,10 @@ class PostController extends Controller
      */
     public function categoriesIndex()
     {
-        $categories = Cache::remember(CacheKeys::categoriesWithPostCount(), now()->addMinutes(15), fn () => Category::withCount(['posts' => function ($q) {
+        $categories = Cache::remember(CacheKeys::categoriesWithPostCount(), now()->addMinutes(15), fn () => Category::select('id', 'name', 'slug', 'updated_at')->withCount(['posts' => function ($q) {
             $q->published();
         }])
             ->orderBy('name')
-            ->select('id', 'name', 'slug', 'updated_at')
             ->get()
             ->map(fn ($c) => [
                 'id' => $c->id,

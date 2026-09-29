@@ -35,7 +35,7 @@ class BookLink extends Model
 
     public function clicks(): HasMany
     {
-        return $this->hasMany(BookLinkClick::class, 'book_purchase_link_id');
+        return $this->hasMany(BookLinkClick::class, 'book_link_id');
     }
 
     /** এক জায়গায় অর্ডারিং—Fallback: sort_order → position → 0 */

@@ -17,8 +17,8 @@ class LikeController extends Controller
 
         $userId = $request->user()->id;
         $model = $data['type'] === 'post'
-            ? Post::findOrFail($data['id'])
-            : Book::findOrFail($data['id']);
+            ? Post::published()->findOrFail($data['id'])
+            : Book::published()->findOrFail($data['id']);
 
         $existing = $model->likes()->where('user_id', $userId)->first();
 

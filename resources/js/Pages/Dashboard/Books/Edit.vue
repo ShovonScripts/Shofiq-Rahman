@@ -26,7 +26,7 @@ const initialCategoryIds = Array.isArray(props.book.category_ids)
 
 const initialLinks = Array.isArray(props.book.links)
   ? props.book.links.map(l => ({
-      label: (l.label ?? '').toString(), url: (l.url ?? '').toString(),
+      id: l.id, label: (l.label ?? '').toString(), url: (l.url ?? '').toString(),
       is_primary: !!l.is_primary, sort_order: Number.isFinite(l.sort_order) ? l.sort_order : 0,
     }))
   : []
@@ -59,12 +59,13 @@ const submit = () => {
       const toCsv = (ids, opts) =>
         (ids || []).map(id => opts.find(o => o.id === id)?.name).filter(Boolean).join(', ')
       const cleanLinks = (data.links || []).map((l, idx) => ({
+        id: l.id ?? null,
         label: (l.label || '').trim() || 'Buy',
         url: (l.url || '').trim(),
         is_primary: !!l.is_primary,
         sort_order: Number.isFinite(l.sort_order) ? l.sort_order : idx,
       }))
-      return { ...data, title: trimmedTitle, genres: toCsv(data.genres, props.genres), categories: toCsv(data.categories, props.categories), links: cleanLinks, _method: 'put' }
+      return { ...data, title: trimmedTitle, genres: toCsv(data.genres, props.genres), categories: toCsv(data.categories, props.categories), links: cleanLinks.length ? cleanLinks : null, _method: 'put' }
     })
     .post(`/dashboard/books/${props.book.id}`, {
       forceFormData: true, preserveScroll: true,

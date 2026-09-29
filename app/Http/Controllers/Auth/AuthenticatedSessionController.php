@@ -44,16 +44,6 @@ class AuthenticatedSessionController extends Controller
             return redirect()->to('/');
         }
 
-        // Optional: block inactive users if you use is_active
-        // if (property_exists($user, 'is_active') && !$user->is_active) {
-        //     Auth::logout();
-        //     $request->session()->invalidate();
-        //     $request->session()->regenerateToken();
-        //     return redirect()->route('login')->withErrors([
-        //         'email' => 'Your account is not active.',
-        //     ]);
-        // }
-
         // ✅ Role-based redirect
         if ($user->isAdmin() || $user->isAuthor()) {
             // honour intended URL within dashboard for authors/admins

@@ -1,6 +1,7 @@
-﻿<script>
-import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+<script>
+import { ref, watch } from 'vue'
+import { router, usePage } from '@inertiajs/vue3'
+import axios from 'axios'
 
 export default {
   name: 'LikeButton',
@@ -10,37 +11,54 @@ export default {
     initialCount: { type: Number, default: 0 },
     initiallyLiked: { type: Boolean, default: false },
   },
-  setup(props){
+  setup(props) {
+    const page = usePage()
     const count = ref(props.initialCount)
     const liked = ref(props.initiallyLiked)
     const loading = ref(false)
     const error = ref('')
 
-    const toggle = () => {
+    watch(() => [props.initialCount, props.initiallyLiked], ([nextCount, nextLiked]) => {
+      count.value = nextCount
+      liked.value = nextLiked
+    })
+
+    const toggle = async () => {
       if (loading.value) return
+      if (!page.props.auth?.user) {
+        router.visit('/login')
+        return
+      }
+      if (!page.props.auth.user.email_verified_at) {
+        router.visit('/verify-email')
+        return
+      }
+
       loading.value = true
       error.value = ''
-      router.post('/likes/toggle', {
-        type: props.type,
-        id: props.id,
-      }, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: (page) => {
-          liked.value = page.props.liked
-          count.value = page.props.count
-        },
-        onError: () => {
-          error.value = 'লাইক করতে সমস্যা হয়েছে!'
-        },
-        onFinish: () => {
-          loading.value = false
-        },
-      })
+      try {
+        // This endpoint returns JSON, not an Inertia page.
+        const { data } = await axios.post('/likes/toggle', {
+          type: props.type,
+          id: props.id,
+        }, { headers: { Accept: 'application/json' } })
+        liked.value = data.liked
+        count.value = data.count
+      } catch (failure) {
+        if (failure.response?.status === 401) {
+          router.visit('/login')
+        } else if (failure.response?.status === 403) {
+          router.visit('/verify-email')
+        } else {
+          error.value = 'লাইক করতে সমস্যা হয়েছে! আবার চেষ্টা করুন।'
+        }
+      } finally {
+        loading.value = false
+      }
     }
 
     return { count, liked, toggle, loading, error }
-  }
+  },
 }
 </script>
 

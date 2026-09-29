@@ -15,7 +15,7 @@ class StoreAuthorAchievementRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            'year' => ['nullable', 'string', 'max:32'],
+            'year' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'description_md' => ['nullable', 'string'],
             'icon' => ['nullable', 'string', 'max:64'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:100000'],

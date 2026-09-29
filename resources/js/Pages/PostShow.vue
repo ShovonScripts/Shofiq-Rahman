@@ -1,4 +1,4 @@
-﻿<!-- resources/js/Pages/PostShow.vue -->
+<!-- resources/js/Pages/PostShow.vue -->
 <script>
 import AppLayout from '../Layouts/AppLayout.vue'
 import { Head, Link } from '@inertiajs/vue3'
@@ -228,8 +228,7 @@ export default {
           :type="'post'"
           :parentId="post.id"
           :items="localComments"
-          :canPost="$page.props.auth?.user"
-          @added="localComments.unshift($event)"
+          :canPost="!!$page.props.auth?.user?.email_verified_at"
           @deleted="localComments = localComments.filter(c => c.id !== $event)"
         />
       </section>

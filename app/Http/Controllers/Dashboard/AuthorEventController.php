@@ -21,7 +21,7 @@ class AuthorEventController extends Controller
 
         return Inertia::render('Dashboard/About/Events/Index', [
             'profile' => $profile,
-            'items' => $items,
+            'events' => $items,
         ]);
     }
 
@@ -48,11 +48,14 @@ class AuthorEventController extends Controller
     public function edit(AuthorEvent $event)
     {
         return Inertia::render('Dashboard/About/Events/Edit', [
-            'item' => $event,
+            'event' => array_merge($event->toArray(), [
+                'happened_at' => $event->happened_at?->toDateString(),
+                'image_url' => $event->image_url,
+            ]),
         ]);
     }
 
-    public function update(StoreAuthorEventRequest|UpdateAuthorEventRequest $request, AuthorEvent $event)
+    public function update(UpdateAuthorEventRequest $request, AuthorEvent $event)
     {
         $data = $request->validated();
 

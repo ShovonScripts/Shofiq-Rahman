@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Book;
-// Models
 use App\Models\Comment;
 use App\Models\ContactMessage;
 use App\Models\HomeBanner;
@@ -18,40 +17,41 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // ── Top-line stats (cached for 60s to avoid 6 separate count() on every dashboard visit)
-        $stats = Cache::remember('dashboard.stats', now()->addSeconds(60), function () {
+        $user = auth()->user();
+        $isAdmin = $user->isAdmin();
+
+        $posts = Post::query()->when(! $isAdmin, fn ($q) => $q->where('user_id', $user->id));
+        $books = Book::query()->when(! $isAdmin, fn ($q) => $q->where('user_id', $user->id));
+        $comments = Comment::query()->when(! $isAdmin, fn ($q) => $q->whereHasMorph(
+            'commentable',
+            [Post::class, Book::class],
+            fn ($parent) => $parent->where('user_id', $user->id)
+        ));
+
+        // Never share an admin's cached payload with an author (or another author).
+        $cacheKey = $isAdmin ? 'dashboard.stats.admin' : 'dashboard.stats.author.'.$user->id;
+        $stats = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($posts, $books, $comments, $isAdmin) {
             return [
-                'posts' => Post::count(),
-                'books' => Book::count(),
-                'users' => User::count(),
-                'comments' => Comment::count(),
-                'messages' => ContactMessage::count(),
-                'pending_posts' => Post::whereIn('status', ['draft', 'pending'])->count(),
+                'posts' => (clone $posts)->count(),
+                'books' => (clone $books)->count(),
+                'users' => $isAdmin ? User::count() : null,
+                'comments' => (clone $comments)->count(),
+                'messages' => $isAdmin ? ContactMessage::count() : null,
+                'pending_posts' => (clone $posts)->whereIn('status', ['draft', 'scheduled'])->count(),
             ];
         });
 
-        // ── Recent items (lightweight column selection)
         $recent = [
-            'posts' => Post::orderByDesc('id')
-                ->take(6)
-                ->get(['id', 'title', 'slug', 'status', 'created_at']), // keep 'status' only if it exists
-
-            'books' => Book::orderByDesc('id')
-                ->take(6)
-                ->get(['id', 'title', 'slug', 'created_at']), // avoid 'status' unless present on books table
-
-            'comments' => Comment::orderByDesc('id')
-                ->with('user:id,name') // uses Comment::user() relation you added
-                ->take(6)
+            'posts' => $posts->latest('id')->take(6)->get(['id', 'user_id', 'title', 'slug', 'status', 'created_at']),
+            'books' => $books->latest('id')->take(6)->get(['id', 'user_id', 'title', 'slug', 'status', 'created_at']),
+            'comments' => $comments->latest('id')->with('user:id,name')->take(6)
                 ->get(['id', 'user_id', 'commentable_type', 'commentable_id', 'created_at']),
-
-            'messages' => ContactMessage::orderByDesc('id')
-                ->take(6)
-                ->get(['id', 'name', 'email', 'subject', 'created_at']),
+            'messages' => $isAdmin
+                ? ContactMessage::latest('id')->take(6)->get(['id', 'name', 'email', 'subject', 'created_at'])
+                : [],
         ];
 
-        // ── Homepage summary card (cached for 60s)
-        $homepage = Cache::remember('dashboard.homepage', now()->addSeconds(60), function () {
+        $homepage = $isAdmin ? Cache::remember('dashboard.homepage', now()->addSeconds(60), function () {
             return [
                 'banners_total' => HomeBanner::count(),
                 'banners_active' => HomeBanner::where('is_active', true)->count(),
@@ -60,21 +60,17 @@ class DashboardController extends Controller
                     'has_photo' => (bool) Setting::get('home_author_photo'),
                 ],
             ];
-        });
-
-        // ── Role flags (UI conveniences)
-        $u = auth()->user();
-        $roleFlags = [
-            'is_admin' => $u?->isAdmin() ?? false,
-            'is_author' => $u?->isAuthor() ?? false,
-            'can_manage_users' => $u?->isAdmin() ?? false,
-        ];
+        }) : null;
 
         return Inertia::render('Dashboard/Index', [
             'stats' => $stats,
             'recent' => $recent,
             'homepage' => $homepage,
-            'roleFlags' => $roleFlags,
+            'roleFlags' => [
+                'is_admin' => $isAdmin,
+                'is_author' => $user->isAuthor(),
+                'can_manage_users' => $isAdmin,
+            ],
         ]);
     }
 }

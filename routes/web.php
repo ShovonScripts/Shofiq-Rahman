@@ -19,8 +19,8 @@ use App\Http\Controllers\Dashboard\DashboardController;               // main da
 use App\Http\Controllers\Dashboard\GenreController as DashboardGenreController;
 use App\Http\Controllers\Dashboard\HomepageController;
 use App\Http\Controllers\Dashboard\PostController as DashboardPostController;
-use App\Http\Controllers\Dashboard\SettingController;
 use App\Http\Controllers\Dashboard\SeoController;
+use App\Http\Controllers\Dashboard\SettingController;
 use App\Http\Controllers\Dashboard\UserController as AdminUserController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\HomeController;
@@ -28,6 +28,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 // Dashboard About controllers
+use App\Models\Book;
 use App\Models\BookPurchaseLink;
 use App\Models\Category;
 use App\Models\Post;
@@ -138,7 +139,7 @@ Route::get('/sitemap.xml', function () {
 
         foreach ($books as $b) {
             $last = optional($b->updated_at)->toAtomString();
-            $add("{$site}/boi/{$b->slug}", $last, 'monthly', '0.6');
+            $add($site.route('books.show', ['slug' => $b->slug], false), $last, 'monthly', '0.6');
         }
 
         foreach ($genres as $g) {
@@ -227,7 +228,7 @@ Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureAdmin::class.'
         Route::middleware([\App\Http\Middleware\EnsureAdmin::class.':admin'])->group(function () {
 
             // Users management
-            Route::resource('users', AdminUserController::class)->except(['create', 'edit']);
+            Route::resource('users', AdminUserController::class)->only(['index', 'store', 'destroy']);
             Route::patch('/users/{user}/role', [AdminUserController::class, 'updateRole'])->name('users.updateRole')->whereNumber('user');
             Route::patch('/users/{user}/toggle-active', [AdminUserController::class, 'toggleActive'])->name('users.toggleActive')->whereNumber('user');
             Route::post('/users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.resetPassword')->whereNumber('user');

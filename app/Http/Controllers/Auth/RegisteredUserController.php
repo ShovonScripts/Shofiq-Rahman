@@ -36,7 +36,7 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = new User();
+        $user = new User;
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
@@ -46,12 +46,6 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
         Auth::login($user);
 
-        // ✅ Role-based redirect: admin/author → dashboard, reader → profile (বা home)
-        if ($user->isAdmin() || $user->isAuthor()) {
-            return redirect()->intended(route('dashboard', absolute: false));
-        }
-
-        // Reader/others
-        return redirect()->intended(route('profile.edit')); // অথবা route('home')
+        return redirect()->route('verification.notice');
     }
 }

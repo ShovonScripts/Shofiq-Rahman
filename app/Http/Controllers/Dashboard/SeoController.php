@@ -7,6 +7,7 @@ use App\Models\Book;
 use App\Models\Post;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class SeoController extends Controller
@@ -48,8 +49,8 @@ class SeoController extends Controller
             'google_site_verification' => 'nullable|string|max:255',
             'bing_site_verification' => 'nullable|string|max:255',
             'yandex_site_verification' => 'nullable|string|max:255',
-            'facebook_pixel_id' => 'nullable|string|max:50',
-            'facebook_app_id' => 'nullable|string|max:50',
+            'facebook_pixel_id' => ['nullable', 'string', 'max:50', 'regex:/\A[0-9]+\z/'],
+            'facebook_app_id' => ['nullable', 'string', 'max:50', 'regex:/\A[0-9]+\z/'],
             'twitter_handle' => 'nullable|string|max:50|regex:/^@?[A-Za-z0-9_]+$/',
         ]);
 
@@ -66,6 +67,7 @@ class SeoController extends Controller
             ->get()
             ->filter(function ($post) {
                 $meta = $post->meta_json ?? [];
+
                 return empty($meta['title']) || empty($meta['description']);
             })
             ->values();
@@ -74,12 +76,14 @@ class SeoController extends Controller
             ->get()
             ->filter(function ($book) {
                 $meta = $book->meta_json ?? [];
+
                 return empty($meta['title']) || empty($meta['description']);
             })
             ->values();
 
+        $lengthFunction = DB::getDriverName() === 'sqlite' ? 'LENGTH' : 'CHAR_LENGTH';
         $postsWithShortContent = Post::published()
-            ->whereRaw('CHAR_LENGTH(COALESCE(body, "")) < 300')
+            ->whereRaw("{$lengthFunction}(COALESCE(body, '')) < ?", [300])
             ->get(['id', 'title', 'slug'])
             ->values();
 

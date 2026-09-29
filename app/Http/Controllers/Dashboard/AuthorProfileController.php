@@ -17,7 +17,12 @@ class AuthorProfileController extends Controller
         $profile = AuthorProfile::first(); // single-row pattern; create one on seed if absent
 
         return Inertia::render('Dashboard/About/Edit', [
-            'profile' => $profile,
+            'profile' => $profile ? [
+                ...$profile->toArray(),
+                'date_of_birth' => $profile->date_of_birth?->toDateString(),
+                'avatar_url' => $profile->avatar_url,
+                'cover_url' => $profile->cover_url,
+            ] : null,
         ]);
     }
 
@@ -25,7 +30,7 @@ class AuthorProfileController extends Controller
     {
         $data = $request->validated();
 
-        $profile = AuthorProfile::firstOrCreate([], []);
+        $profile = AuthorProfile::firstOrNew();
         // Handle file uploads
         if ($request->hasFile('avatar')) {
             if ($profile->avatar_path) {

@@ -80,13 +80,13 @@ class DashboardAccessTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_author_can_access_admin_users_route(): void
+    public function test_author_cannot_access_admin_users_route(): void
     {
         $author = $this->authorUser();
 
         $response = $this->actingAs($author)->get('/dashboard/users');
 
-        $response->assertOk();
+        $response->assertForbidden();
     }
 
     public function test_admin_can_access_users_management(): void
@@ -125,12 +125,12 @@ class DashboardAccessTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_author_can_access_contact_messages(): void
+    public function test_author_cannot_access_contact_messages(): void
     {
         $author = $this->authorUser();
 
         $response = $this->actingAs($author)->get('/dashboard/contacts');
 
-        $response->assertOk();
+        $response->assertForbidden();
     }
 }

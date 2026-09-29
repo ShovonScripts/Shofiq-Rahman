@@ -39,37 +39,40 @@ export default {
         {
           heading: 'Content',
           items: [
-            { label: 'Homepage',  href: r('dashboard.homepage')  || '/dashboard/homepage',  path: '/dashboard/homepage',  icon: 'layout' },
-            { label: 'Posts',     href: r('dashboard.posts')     || '/dashboard/posts',     path: '/dashboard/posts',     icon: 'posts' },
-            { label: 'Books',     href: r('dashboard.books')     || '/dashboard/books',     path: '/dashboard/books',     icon: 'books' },
-            { label: 'Genres',    href: r('dashboard.genres')    || '/dashboard/genres',    path: '/dashboard/genres',    icon: 'tag' },
-            { label: 'Categories',href: r('dashboard.categories')|| '/dashboard/categories',path: '/dashboard/categories',icon: 'grid' },
+            { label: 'Homepage', adminOnly: true, href: r('dashboard.homepage.edit')  || '/dashboard/homepage',  path: '/dashboard/homepage',  icon: 'layout' },
+            { label: 'Posts',     href: r('dashboard.posts.index')     || '/dashboard/posts',     path: '/dashboard/posts',     icon: 'posts' },
+            { label: 'Books',     href: r('dashboard.books.index')     || '/dashboard/books',     path: '/dashboard/books',     icon: 'books' },
+            { label: 'Genres',    href: r('dashboard.genres.index')    || '/dashboard/genres',    path: '/dashboard/genres',    icon: 'tag' },
+            { label: 'Categories',href: r('dashboard.categories.index')|| '/dashboard/categories',path: '/dashboard/categories',icon: 'grid' },
           ],
         },
         {
           heading: 'Author',
           items: [
-            { label: 'Profile',       href: r('dashboard.about')           || '/dashboard/about',           path: '/dashboard/about',           icon: 'user' },
-            { label: 'Achievements',  href: r('dashboard.about.achievements') || '/dashboard/about/achievements', path: '/dashboard/about/achievements', icon: 'check' },
-            { label: 'Life Events',   href: r('dashboard.about.events')    || '/dashboard/about/events',    path: '/dashboard/about/events',    icon: 'calendar' },
+            { label: 'Profile',       href: r('dashboard.about.edit')           || '/dashboard/about',           path: '/dashboard/about',           icon: 'user' },
+            { label: 'Achievements',  href: r('dashboard.about.achievements.index') || '/dashboard/about/achievements', path: '/dashboard/about/achievements', icon: 'check' },
+            { label: 'Life Events',   href: r('dashboard.about.events.index')    || '/dashboard/about/events',    path: '/dashboard/about/events',    icon: 'calendar' },
           ],
         },
         {
           heading: 'Interactions',
           items: [
-            { label: 'Comments', href: r('dashboard.comments') || '/dashboard/comments', path: '/dashboard/comments', icon: 'chat' },
-            { label: 'Contacts', href: r('dashboard.contacts') || '/dashboard/contacts', path: '/dashboard/contacts', icon: 'mail' },
+            { label: 'Comments', href: r('dashboard.comments.index') || '/dashboard/comments', path: '/dashboard/comments', icon: 'chat' },
+            { label: 'Contacts', adminOnly: true, href: r('dashboard.contacts.index') || '/dashboard/contacts', path: '/dashboard/contacts', icon: 'mail' },
           ],
         },
         {
           heading: 'Administration',
           items: [
-            { label: 'Users',    href: r('dashboard.users')    || '/dashboard/users',    path: '/dashboard/users',    icon: 'users' },
-            { label: 'SEO Manager', href: r('dashboard.seo') || '/dashboard/seo', path: '/dashboard/seo', icon: 'search' },
-            { label: 'Settings',    href: r('dashboard.settings') || '/dashboard/settings', path: '/dashboard/settings', icon: 'settings' },
+            { label: 'Users', adminOnly: true,   href: r('dashboard.users.index')    || '/dashboard/users',    path: '/dashboard/users',    icon: 'users' },
+            { label: 'SEO Manager', href: r('dashboard.seo.index') || '/dashboard/seo', path: '/dashboard/seo', icon: 'search' },
+            { label: 'Settings',    href: r('dashboard.settings.edit') || '/dashboard/settings', path: '/dashboard/settings', icon: 'settings' },
           ],
         },
-      ]
+      ].map(group => ({
+        ...group,
+        items: group.items.filter(item => !item.adminOnly || this.user?.role === 'admin'),
+      })).filter(group => group.items.length)
     },
   },
 

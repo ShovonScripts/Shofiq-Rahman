@@ -9,7 +9,8 @@ defineOptions({ layout: AdminLayout })
 // ✅ Props
 const props = defineProps({
   post: Object,
-  allGenres: Array,
+  allGenres: { type: Array, default: () => [] },
+  allCategories: { type: Array, default: () => [] },
 })
 
 // ✅ Form setup
@@ -18,11 +19,11 @@ const form = useForm({
   body: props.post.body,
   status: props.post.status,
   published_at: props.post.published_at,
-  categories: props.post.categories || '',
+  category_ids: [...(props.post.selected_category_ids || [])],
   cover: null,
   meta_title: props.post.meta_title || '',
   meta_description: props.post.meta_description || '',
-  genre_ids: props.post.genre_ids || [],
+  genre_ids: [...(props.post.selected_genre_ids || [])],
 })
 
 // ✅ Cover preview logic
@@ -41,19 +42,28 @@ const submit = () => {
 
   // trim fields before submit
   form.title = (form.title || '').trim()
-  form.categories = (form.categories || '').trim()
   form.meta_title = (form.meta_title || '').trim()
   form.meta_description = (form.meta_description || '').trim()
 
-  form.put(`/dashboard/posts/${props.post.id}`, {
-    onSuccess: () => {
-      form.cover = null
-      if (previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value)
-        previewUrl.value = null
-      }
-    },
-  })
+  form
+    .transform(data => ({
+      ...data,
+      // Empty arrays need explicit values in multipart requests.
+      category_ids: data.category_ids.length ? data.category_ids : null,
+      genre_ids: data.genre_ids.length ? data.genre_ids : null,
+      _method: 'put',
+    }))
+    .post(`/dashboard/posts/${props.post.id}`, {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => {
+        form.cover = null
+        if (previewUrl.value) {
+          URL.revokeObjectURL(previewUrl.value)
+          previewUrl.value = null
+        }
+      },
+    })
 }
 
 // ✅ Cleanup on unmount
@@ -177,23 +187,21 @@ function getStatusText(status) {
 
           <!-- Categories -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2" for="categories">
-              Categories (Separate with commas)
-            </label>
-            <input
+            <label class="block text-sm font-medium text-gray-700 mb-2" for="categories">Categories</label>
+            <select
               id="categories"
-              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-              v-model="form.categories"
-              placeholder="Example: Technology, Programming, Web Development"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-32"
+              v-model="form.category_ids"
+              multiple
               :disabled="form.processing"
-              :class="{ 'border-red-500 ring-red-500': form.errors.categories }"
-            />
-            <div class="text-red-600 text-sm mt-1" v-if="form.errors.categories">
-              {{ form.errors.categories }}
-            </div>
-            <div class="text-sm text-gray-500 mt-1">
-              Separate multiple categories with commas (,)
-            </div>
+              :class="{ 'border-red-500 ring-red-500': form.errors.category_ids }"
+            >
+              <option v-for="category in props.allCategories" :key="category.id" :value="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+            <div class="text-red-600 text-sm mt-1" v-if="form.errors.category_ids">{{ form.errors.category_ids }}</div>
+            <p class="text-sm text-gray-500 mt-1">Hold Ctrl (or Cmd) to select multiple categories</p>
           </div>
 
           <!-- Genres -->
@@ -353,17 +361,20 @@ function getStatusText(status) {
               <!-- Published At -->
               <div v-if="form.status !== 'draft'">
                 <label class="block text-sm font-medium text-gray-700 mb-2" for="published_at">
-                  Published Date
+                  Publication Date &amp; Time (server timezone)
                 </label>
                 <input
                   id="published_at"
-                  type="date"
+                  type="datetime-local"
                   class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                   v-model="form.published_at"
+                  :required="form.status === 'scheduled'"
                   :disabled="form.processing"
+                  :class="{ 'border-red-500 ring-red-500': form.errors.published_at }"
                 />
+                <p v-if="form.errors.published_at" class="text-red-600 text-sm mt-1">{{ form.errors.published_at }}</p>
                 <div class="text-sm text-gray-500 mt-1">
-                  Set the date when the post should be published
+                  Required for scheduled posts. The scheduler publishes the post at this time.
                 </div>
               </div>
             </div>

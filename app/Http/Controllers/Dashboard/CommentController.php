@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\Book;
 use App\Models\Comment;
+use App\Models\Post;
 use Inertia\Inertia;
 
 class CommentController extends Controller
@@ -13,7 +15,11 @@ class CommentController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
         $comments = Comment::with('author', 'commentable')
+            ->when(! $user->isAdmin(), fn ($q) => $q->whereHasMorph(
+                'commentable', [Post::class, Book::class], fn ($parent) => $parent->where('user_id', $user->id)
+            ))
             ->latest()
             ->paginate(20);
 
@@ -27,6 +33,8 @@ class CommentController extends Controller
      */
     public function approve(Comment $comment)
     {
+        $this->authorize('moderate', $comment);
+
         $comment->update(['is_approved' => true]);
 
         // ✅ Use a proper Inertia redirect
@@ -39,6 +47,8 @@ class CommentController extends Controller
      */
     public function unapprove(Comment $comment)
     {
+        $this->authorize('moderate', $comment);
+
         $comment->update(['is_approved' => false]);
 
         return to_route('dashboard.comments.index')
@@ -50,6 +60,8 @@ class CommentController extends Controller
      */
     public function destroy(Comment $comment)
     {
+        $this->authorize('moderate', $comment);
+
         $comment->delete();
 
         return to_route('dashboard.comments.index')

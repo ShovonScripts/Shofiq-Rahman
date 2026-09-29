@@ -19,9 +19,11 @@ const form = useForm({
 })
 
 const submit = () => {
-  form.put(route('dashboard.about.events.update', props.event.id), {
-    forceFormData: true, preserveScroll: true,
-  })
+  form
+    .transform(data => ({ ...data, _method: 'put' }))
+    .post(route('dashboard.about.events.update', props.event.id), {
+      forceFormData: true, preserveScroll: true,
+    })
 }
 
 const handleFileChange = (e) => {

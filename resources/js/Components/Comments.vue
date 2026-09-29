@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { reactive, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
@@ -12,7 +12,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['added', 'deleted'])
+const emit = defineEmits(['deleted'])
 
 const form = reactive({ body: '', website: '' })
 const submitting = ref(false)
@@ -31,9 +31,8 @@ function submit() {
 
   router.post('/comments', { type: props.type, id: props.parentId, body: form.body }, {
     preserveScroll: true,
-    onSuccess: (response) => {
-      const comment = response.props?.comment
-      if (comment) emit('added', comment)
+    onSuccess: () => {
+      // Pending comments stay private; the server's flash confirms submission.
       form.body = ''
     },
     onError: () => {
@@ -63,7 +62,7 @@ function destroy(id) {
   <section class="mt-6">
     <h3 class="text-base font-semibold text-gray-900 mb-3">মন্তব্য</h3>
 
-    <form v-if="$page.props.auth?.user" @submit.prevent="submit" class="mb-4">
+    <form v-if="$page.props.auth?.user?.email_verified_at" @submit.prevent="submit" class="mb-4">
       <textarea
         v-model="form.body"
         rows="3"
@@ -89,6 +88,7 @@ function destroy(id) {
       </div>
       <p v-if="errors.submit" class="text-sm text-red-600 mt-1">{{ errors.submit }}</p>
     </form>
+    <p v-else-if="$page.props.auth?.user" class="text-sm text-gray-500">মন্তব্য করতে আগে <a href="/verify-email" class="text-blue-600 underline">ইমেইল যাচাই</a> করুন।</p>
     <p v-else class="text-sm text-gray-500">কমেন্ট করতে <a href="/login" class="text-blue-600 hover:text-blue-800 underline">লগইন</a> করুন।</p>
 
     <div v-if="items?.length" class="space-y-3">

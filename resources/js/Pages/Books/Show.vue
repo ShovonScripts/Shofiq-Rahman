@@ -1,4 +1,4 @@
-﻿<!-- resources/js/Pages/Books/Show.vue -->
+<!-- resources/js/Pages/Books/Show.vue -->
 <script>
 import AppLayout from '../../Layouts/AppLayout.vue'
 import { Head, Link } from '@inertiajs/vue3'
@@ -29,14 +29,14 @@ export default {
       return DOMPurify.sanitize(md.render(this.book?.description || ''))
     },
     metaTitle() {
-      return this.book?.meta_json?.title || this.book?.title || 'বই'
+      return this.book?.meta?.title || this.book?.meta_json?.title || this.book?.title || 'বই'
     },
     metaDesc() {
-      return this.book?.meta_json?.description || this.book?.subtitle || 'বইয়ের বিবরণ'
+      return this.book?.meta?.description || this.book?.meta_json?.description || this.book?.subtitle || 'বইয়ের বিবরণ'
     },
     canonical() {
       const base = this.$page?.props?.app?.url || window.location.origin
-      return `${base}/boi/${this.book?.slug || ''}`
+      return `${base.replace(/\/$/, '')}/books/${encodeURIComponent(this.book?.slug || '')}`
     },
     coverUrl() {
       return this.book?.cover_url || null
@@ -228,8 +228,7 @@ export default {
               :type="'book'"
               :parentId="book.id"
               :items="localComments"
-              :canPost="$page.props.auth?.user"
-              @added="localComments.unshift($event)"
+              :canPost="!!$page.props.auth?.user?.email_verified_at"
               @deleted="localComments = localComments.filter(c => c.id !== $event)"
             />
           </section>

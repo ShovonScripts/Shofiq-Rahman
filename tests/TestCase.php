@@ -7,6 +7,14 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Backend HTTP assertions do not require compiled browser assets.
+        $this->withoutVite();
+    }
+
     protected function adminUser(array $attributes = []): User
     {
         return User::factory()->admin()->create($attributes);

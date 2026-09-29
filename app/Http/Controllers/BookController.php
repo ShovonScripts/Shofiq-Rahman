@@ -166,7 +166,7 @@ class BookController extends Controller
             'links' => fn ($q) => $q->ordered(),
             'genres:id,name,slug',
             'categories:id,name,slug',
-            'comments' => fn ($q) => $q->with('author:id,name')->latest()->limit(50),
+            'comments' => fn ($q) => $q->approved()->with('author:id,name')->latest()->limit(50),
         ])
             ->withCount('likes')
             ->published()

@@ -1,7 +1,7 @@
 <!-- resources/js/Pages/Profile.vue -->
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { useForm, Head } from '@inertiajs/vue3'
+import { useForm, Head, Link } from '@inertiajs/vue3'
 
 defineOptions({ layout: AppLayout })
 
@@ -49,6 +49,13 @@ const changePassword = () => {
           আপনার ব্যক্তিগত তথ্য এবং পাসওয়ার্ড পরিচালনা করুন
         </p>
       </header>
+
+      <section v-if="props.auth.user && !props.auth.user.email_verified_at" class="px-3 sm:px-0 mb-6">
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          আপনার ইমেইল ঠিকানা যাচাই করুন।
+          <Link href="/verify-email" class="underline font-semibold">যাচাইয়ের নির্দেশনা দেখুন</Link>
+        </div>
+      </section>
 
       <!-- Update Profile -->
       <section class="px-3 sm:px-0 mb-6">

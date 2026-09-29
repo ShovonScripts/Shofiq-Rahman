@@ -98,11 +98,11 @@ class PostController extends Controller
 
         DB::beginTransaction();
         try {
-            $slugService = new SlugService();
-            $readingTimeService = new ReadingTimeService();
-            $termSyncService = new TermSyncService();
+            $slugService = new SlugService;
+            $readingTimeService = new ReadingTimeService;
+            $termSyncService = new TermSyncService;
 
-            $slug = $slugService->generateUniqueSlug(new Post(), $data['title']);
+            $slug = $slugService->generateUniqueSlug(new Post, $data['title']);
 
             $plain = trim(strip_tags($data['body']));
             $reading = $readingTimeService->calculate($plain);
@@ -180,7 +180,7 @@ class PostController extends Controller
                 'title' => $post->title,
                 'body' => $post->body,
                 'status' => $post->status,
-                'published_at' => optional($post->published_at)->format('Y-m-d'),
+                'published_at' => optional($post->published_at)->format('Y-m-d\TH:i'),
                 'cover_url' => $post->cover ? storage_url($post->cover) : null,
                 'meta_title' => $meta['title'] ?? '',
                 'meta_description' => $meta['description'] ?? '',
@@ -201,8 +201,6 @@ class PostController extends Controller
         $request->merge([
             'title' => trim((string) $request->input('title')),
             'body' => (string) $request->input('body'),
-            'categories' => (string) $request->input('categories', ''), // legacy optional
-            'genres' => (string) $request->input('genres', ''),     // legacy optional
             'meta_title' => trim((string) $request->input('meta_title')),
             'meta_description' => trim((string) $request->input('meta_description')),
         ]);
@@ -211,7 +209,7 @@ class PostController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
             'status' => ['required', 'in:draft,published,scheduled'],
-            'published_at' => ['nullable', 'date'],
+            'published_at' => ['required_if:status,scheduled', 'nullable', 'date'],
             'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'meta_title' => ['nullable', 'string', 'max:70'],
             'meta_description' => ['nullable', 'string', 'max:160'],
@@ -227,24 +225,26 @@ class PostController extends Controller
             'genres' => ['nullable', 'string', 'max:500'],
         ]);
 
+        $oldCover = $post->cover;
+        $newCover = $oldCover;
+
         DB::beginTransaction();
         try {
-            $readingTimeService = new ReadingTimeService();
-            $termSyncService = new TermSyncService();
+            $readingTimeService = new ReadingTimeService;
+            $termSyncService = new TermSyncService;
 
             $plain = trim(strip_tags($data['body']));
             $reading = $readingTimeService->calculate($plain);
             $excerpt = mb_substr($plain, 0, 160) ?: null;
 
-            if ($data['status'] === 'published' && empty($data['published_at'])) {
-                $data['published_at'] = now();
+            $publishedAt = $data['published_at'] ?? $post->published_at;
+            if ($data['status'] === 'published' && ! $publishedAt) {
+                $publishedAt = now();
+            } elseif ($data['status'] === 'draft') {
+                $publishedAt = null;
             }
 
-            $newCover = $post->cover;
             if ($request->hasFile('cover')) {
-                if ($post->cover) {
-                    Storage::disk('public')->delete($post->cover);
-                }
                 $newCover = $request->file('cover')->store('covers', 'public');
             }
 
@@ -259,38 +259,43 @@ class PostController extends Controller
                 'excerpt' => $excerpt,
                 'reading_time' => $reading,
                 'status' => $data['status'],
-                'published_at' => $data['published_at'],
+                'published_at' => $publishedAt,
                 'cover' => $newCover,
                 'meta_json' => $meta ?: null,
             ]);
 
-            $categoryIds = $data['category_ids'] ?? [];
-            $genreIds = $data['genre_ids'] ?? [];
-
-            if (empty($categoryIds) && array_key_exists('categories', $data)) {
+            // An omitted taxonomy is unchanged; an explicit empty selection clears it.
+            if (array_key_exists('category_ids', $data)) {
+                $post->categories()->sync($data['category_ids'] ?? []);
+            } elseif (array_key_exists('categories', $data)) {
                 $termSyncService->syncCategories($post, $data['categories'] ?? '');
-            } else {
-                $post->categories()->sync($categoryIds);
             }
 
-            if (empty($genreIds) && array_key_exists('genres', $data)) {
+            if (array_key_exists('genre_ids', $data)) {
+                $post->genres()->sync($data['genre_ids'] ?? []);
+            } elseif (array_key_exists('genres', $data)) {
                 $termSyncService->syncGenres($post, $data['genres'] ?? '');
-            } else {
-                $post->genres()->sync($genreIds);
             }
 
             DB::commit();
-
-            Cache::forget(CacheKeys::latestPosts());
-            Cache::forget(CacheKeys::categoriesWithPostCount());
-            Cache::forget('rss.items');
-            Cache::forget('sitemap.xml');
-
-            return redirect()->route('dashboard.posts.index')->with('success', 'Post updated!');
         } catch (\Throwable $e) {
             DB::rollBack();
+            if ($newCover && $newCover !== $oldCover) {
+                Storage::disk('public')->delete($newCover);
+            }
             throw $e;
         }
+
+        if ($oldCover && $newCover !== $oldCover) {
+            Storage::disk('public')->delete($oldCover);
+        }
+
+        Cache::forget(CacheKeys::latestPosts());
+        Cache::forget(CacheKeys::categoriesWithPostCount());
+        Cache::forget('rss.items');
+        Cache::forget('sitemap.xml');
+
+        return redirect()->route('dashboard.posts.index')->with('success', 'Post updated!');
     }
 
     /**
@@ -353,5 +358,4 @@ class PostController extends Controller
             throw $e;
         }
     }
-
 }

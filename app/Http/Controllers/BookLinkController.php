@@ -6,7 +6,6 @@ use App\Models\BookLinkClick;
 use App\Models\BookPurchaseLink;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema; // extends BookLink (route model will bind here)
 use Illuminate\Support\Str;
 
 class BookLinkController extends Controller
@@ -71,42 +70,20 @@ class BookLinkController extends Controller
         return in_array($scheme, ['http', 'https'], true);
     }
 
-    /**
-     * Log click if table/columns exist; supports both old and new schemas:
-     * - New:  book_link_clicks.book_link_id  → book_links.id
-     * - Old:  book_link_clicks.book_purchase_link_id → book_purchase_links.id
-     */
+    /** Click logging is best-effort and must never prevent a valid redirect. */
     private function logClickIfPossible(Request $request, BookPurchaseLink $link): void
     {
         try {
-            if (! class_exists(BookLinkClick::class)) {
-                return;
-            }
-            if (! Schema::hasTable('book_link_clicks')) {
-                return;
-            }
-
-            $data = [
+            BookLinkClick::create([
                 'book_id' => $link->book_id,
+                'book_link_id' => $link->id,
                 'ip' => $request->ip(),
                 'user_agent' => substr((string) $request->userAgent(), 0, 500),
                 'referer' => substr((string) $request->headers->get('referer'), 0, 1000),
                 'utm_source' => substr((string) $request->query('utm_source', ''), 0, 100),
                 'utm_medium' => substr((string) $request->query('utm_medium', ''), 0, 100),
                 'utm_campaign' => substr((string) $request->query('utm_campaign', ''), 0, 150),
-            ];
-
-            // Prefer new FK if present; otherwise fall back to legacy FK.
-            if (Schema::hasColumn('book_link_clicks', 'book_link_id')) {
-                $data['book_link_id'] = $link->id; // NEW schema
-            } elseif (Schema::hasColumn('book_link_clicks', 'book_purchase_link_id')) {
-                $data['book_purchase_link_id'] = $link->id; // LEGACY schema
-            } else {
-                // No compatible FK present; skip logging silently.
-                return;
-            }
-
-            BookLinkClick::create($data);
+            ]);
         } catch (\Throwable $e) {
             logger()->warning('Failed to log book link click', [
                 'link_id' => $link->id,

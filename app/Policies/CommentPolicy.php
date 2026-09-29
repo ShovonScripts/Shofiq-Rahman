@@ -19,6 +19,14 @@ class CommentPolicy
         return true;
     }
 
+    public function moderate(User $user, Comment $comment): bool
+    {
+        $parent = $comment->commentable;
+
+        return $user->isAdmin() || (($parent instanceof Post || $parent instanceof Book)
+            && (int) $parent->user_id === (int) $user->id);
+    }
+
     public function update(User $user, Comment $comment): bool
     {
         return $comment->user_id === $user->id;

@@ -6,7 +6,6 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 
 import { createApp, h } from 'vue'
 import { createInertiaApp } from '@inertiajs/vue3'
-import { InertiaProgress } from '@inertiajs/progress'
 import AppLayout from './Layouts/AppLayout.vue'
 
 // ✅ Ziggy (named routes) — rely on @routes (window.Ziggy) only
@@ -14,6 +13,7 @@ import { ZiggyVue } from 'ziggy-js'
 
 createInertiaApp({
   title: (title) => title || '',
+  progress: { delay: 250, color: '#4B5563', includeCSS: true, showSpinner: true },
 
   resolve: (name) => {
     // ✅ Lazy-load pages — only downloads the component when its route is visited
@@ -40,12 +40,4 @@ createInertiaApp({
       .use(ZiggyVue)
       .mount(el)
   },
-})
-
-// Inertia progress bar
-InertiaProgress.init({
-  delay: 250,
-  color: '#4B5563',
-  includeCSS: true,
-  showSpinner: true,
 })

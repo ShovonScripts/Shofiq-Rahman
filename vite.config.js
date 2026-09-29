@@ -22,8 +22,7 @@ export default defineConfig({
             output: {
                 // ✅ Separate vendor chunks for better caching
                 manualChunks: {
-                    vue: ['vue', '@inertiajs/vue3', '@inertiajs/progress'],
-                    bootstrap: ['bootstrap', '@popperjs/core'],
+                    vue: ['vue', '@inertiajs/vue3'],
                     ziggy: ['ziggy-js'],
                     markdown: ['markdown-it', 'dompurify', 'marked'],
                 },

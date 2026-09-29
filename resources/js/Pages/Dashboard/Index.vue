@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import AdminLayout from '@/Layouts/AdminLayout.vue'
+import { computed } from 'vue'
 
 // ✅ Attach Admin layout
 defineOptions({ layout: AdminLayout })
@@ -14,7 +15,7 @@ const props = defineProps({
 })
 
 const page = usePage()
-const user  = page.props.value?.auth?.user ?? null
+const user = computed(() => page.props.auth?.user ?? null)
 
 const fmt = (d) => {
   try {
@@ -36,7 +37,7 @@ const fmt = (d) => {
         <p class="text-sm text-gray-500">Welcome back, {{ user?.name || 'Admin' }}</p>
       </div>
       <div class="flex gap-2">
-        <Link :href="route('dashboard.homepage.edit')" class="btn btn-primary inline-flex items-center px-4 py-2 rounded-lg">
+        <Link v-if="props.roleFlags.is_admin" :href="route('dashboard.homepage.edit')" class="btn btn-primary inline-flex items-center px-4 py-2 rounded-lg">
           <i class="bi bi-grid mr-2"></i> Manage Homepage
         </Link>
         <Link :href="route('home')" class="btn inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50">
@@ -51,11 +52,11 @@ const fmt = (d) => {
         v-for="card in [
           {label:'Posts',     value: props.stats?.posts ?? 0,     icon:'bi-journal-text',  link: route('dashboard.posts.index')},
           {label:'Books',     value: props.stats?.books ?? 0,     icon:'bi-book',           link: route('dashboard.books.index')},
-          {label:'Users',     value: props.stats?.users ?? 0,     icon:'bi-people',         link: props.roleFlags?.can_manage_users ? route('dashboard.users.index') : null},
+          {label:'Users',     value: props.stats?.users ?? null,     icon:'bi-people',         link: props.roleFlags?.can_manage_users ? route('dashboard.users.index') : null},
           {label:'Comments',  value: props.stats?.comments ?? 0,  icon:'bi-chat-left-dots', link: route('dashboard.comments.index')},
-          {label:'Messages',  value: props.stats?.messages ?? 0,  icon:'bi-inbox',          link: route('dashboard.contacts.index')},
+          {label:'Messages',  value: props.stats?.messages ?? null,  icon:'bi-inbox',          link: route('dashboard.contacts.index')},
           {label:'Pending',   value: props.stats?.pending_posts ?? 0, icon:'bi-hourglass-split', link: route('dashboard.posts.index', { status:'pending' })}
-        ]"
+        ].filter(card => card.value !== null)"
         :key="card.label"
         class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
       >
@@ -78,11 +79,11 @@ const fmt = (d) => {
     </div>
 
     <!-- Homepage summary block -->
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <div v-if="props.roleFlags.is_admin" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <div class="flex items-center justify-between">
         <h3 class="font-semibold">Homepage</h3>
         <div class="flex gap-2">
-          <Link :href="route('dashboard.homepage.edit')" class="btn btn-primary btn-sm">
+          <Link v-if="props.roleFlags.is_admin" :href="route('dashboard.homepage.edit')" class="btn btn-primary btn-sm">
             <i class="bi bi-grid mr-1"></i> Manage
           </Link>
           <Link :href="route('dashboard.homepage.edit') + '#banners'" class="btn btn-outline btn-sm">
@@ -129,7 +130,7 @@ const fmt = (d) => {
         <Link :href="route('dashboard.settings.edit')" class="btn btn-outline">
           <i class="bi bi-gear mr-2"></i> Settings
         </Link>
-        <Link :href="route('dashboard.contacts.index')" class="btn btn-outline">
+        <Link v-if="props.roleFlags.is_admin" :href="route('dashboard.contacts.index')" class="btn btn-outline">
           <i class="bi bi-inbox mr-2"></i> Inbox
         </Link>
       </div>
@@ -170,7 +171,7 @@ const fmt = (d) => {
                 </td>
                 <td class="py-2">{{ fmt(p.created_at) }}</td>
                 <td class="py-2 text-right">
-                  <Link :href="route('dashboard.posts.edit', p.id)" class="text-blue-600 hover:text-blue-700">Edit</Link>
+                  <Link v-if="p.user_id === user?.id" :href="route('dashboard.posts.edit', p.id)" class="text-blue-600 hover:text-blue-700">Edit</Link>
                 </td>
               </tr>
             </tbody>
@@ -214,7 +215,7 @@ const fmt = (d) => {
                 </td>
                 <td class="py-2">{{ fmt(b.created_at) }}</td>
                 <td class="py-2 text-right">
-                  <Link :href="route('dashboard.books.edit', b.id)" class="text-blue-600 hover:text-blue-700">Edit</Link>
+                  <Link v-if="b.user_id === user?.id" :href="route('dashboard.books.edit', b.id)" class="text-blue-600 hover:text-blue-700">Edit</Link>
                 </td>
               </tr>
             </tbody>
@@ -259,7 +260,7 @@ const fmt = (d) => {
       </div>
 
       <!-- Latest Messages -->
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div v-if="props.roleFlags.is_admin" class="bg-white border border-gray-200 rounded-xl shadow-sm">
         <div class="px-4 py-3 border-b">
           <h3 class="font-semibold">Latest Messages</h3>
         </div>
@@ -287,7 +288,7 @@ const fmt = (d) => {
           </table>
         </div>
         <div class="px-4 py-3 border-t text-right">
-          <Link :href="route('dashboard.contacts.index')" class="text-sm text-blue-600 hover:text-blue-700">Inbox</Link>
+          <Link v-if="props.roleFlags.is_admin" :href="route('dashboard.contacts.index')" class="text-sm text-blue-600 hover:text-blue-700">Inbox</Link>
         </div>
       </div>
     </div>
